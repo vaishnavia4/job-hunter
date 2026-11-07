@@ -2,17 +2,17 @@
 
 This folder is one person's job search, run by the **job-hunter** plugin.
 Pipeline: **search → screen → prepare → tailor → (approve) → apply → track → learn**.
-Explain what you're doing as you go — the user should understand and learn the process.
+Explain what you're doing as you go: the user should understand and learn the process.
 
 ## Files (all in this folder)
-- `profile/profile.json` — every applicant answer (contact, work authorization rules, EEO, salary, start date, submit policy).
-- `profile/master_resume.json` — **the only source of resume facts.**
-- `profile/credentials.json` — local-only ATS passwords. Never echo, copy or log them.
+- `profile/profile.json`: every applicant answer (contact, work authorization rules, EEO, salary, start date, submit policy).
+- `profile/master_resume.json`: **the only source of resume facts.**
+- `profile/credentials.json`: local-only ATS passwords. Never echo, copy or log them.
 - `config/search.json` (titles, locations, scoring), `config/skills.json` (skill vocab + have-flags), `config/companies.json` (boards), `config/learning.json`.
 - `data/tracker.csv` (source of truth) → `tracker.xlsx` export. `skills_gap.md` = market demand vs. the user's skills.
-- `applications/<Company>_<Role>/` (only for jobs you decided to apply to; skips live in the tracker) — `job.json`, `JD.md`, `tailored.json`, `cover_letter.md`, resume + cover letter `.docx/.pdf`, `match_report.md`, `notes.md`, `decision.json`, screenshots.
+- `applications/<Company>_<Role>/` (only for jobs you decided to apply to; skips live in the tracker): `job.json`, `JD.md`, `tailored.json`, `cover_letter.md`, resume + cover letter `.docx/.pdf`, `match_report.md`, `notes.md`, `decision.json`, screenshots.
 
-Tools: the `jobs` MCP server (`search_jobs`, `read_job_alerts`, `add_job`, `archive_skipped`, `list_jobs`, `prepare_application`, `build_resume`, `update_status`, `sync_decisions`, `skills_gap_report`, `stats`) — or the CLI `python -m jobhunter <cmd> --workspace .` from the plugin's `server/` folder.
+Tools: the `jobs` MCP server (`search_jobs`, `read_job_alerts`, `add_job`, `archive_skipped`, `list_jobs`, `prepare_application`, `build_resume`, `update_status`, `sync_decisions`, `skills_gap_report`, `stats`): or the CLI `python -m jobhunter <cmd> --workspace .` from the plugin's `server/` folder.
 
 ## Non-negotiable rules
 1. **Never invent anything.** No skill, tool, metric, title, date, employer or certification that is not in `master_resume.json`. Reword, reorder and select only. If the user tells you a new fact, add it to the master first (and ask when it conflicts with what's there).
@@ -20,7 +20,7 @@ Tools: the `jobs` MCP server (`search_jobs`, `read_job_alerts`, `add_job`, `arch
 3. **Cover letters never mention gaps.** Gaps go only in `match_report.md` / `notes.md`.
 4. **Resumes are 2 pages max**, single column, standard headings. Bold 1–2 metrics per role. Truth check must PASS.
 5. **Legal answers come from the user.** Work authorization wording follows `work_authorization.answer_rules` exactly. Arbitration agreements, conflict-of-interest and other attestations: fill only what the user has already answered; otherwise stop and ask. The user ticks legal-agreement boxes themselves.
-6. **Approval mode:** until `submit_policy.approved_so_far` reaches `approve_first_n`, fill the form, screenshot it, set status `ready`, and tell the user "ready" — they review and click Submit. Increment `approved_so_far` after each confirmed submission. Never click Submit while the user is still reviewing or while a file is being replaced.
+6. **Approval mode:** until `submit_policy.approved_so_far` reaches `approve_first_n`, fill the form, screenshot it, set status `ready`, and tell the user "ready": they review and click Submit. Increment `approved_so_far` after each confirmed submission. Never click Submit while the user is still reviewing or while a file is being replaced.
 7. **LinkedIn / Indeed Easy Apply = discovery only** (automation is against their terms). Apply on the company's own ATS.
 8. Max 2 applications per company per day; never apply twice to the same job; never apply to excluded employers.
 9. CAPTCHA, SMS codes, or anything needing the user's personal password (e.g. Google) → status `blocked`, tell the user, move on.

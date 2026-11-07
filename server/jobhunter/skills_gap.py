@@ -53,7 +53,7 @@ def run(ws: Workspace):
           "|---|---|---|---|---|---|---|"]
     md += [f"| {r['priority']} | **{r['skill']}** | {r['jobs']} jobs ({r['pct']}) | {r['status']} | {r['why']} | {r['learn']} | {r['proof']} |" for r in gaps]
     md += ["", "## Gaps noted on jobs being applied to", ""]
-    md += [f"- {g} — *{', '.join(sorted(set(c)))}*" for g, c in sorted(noted.items(), key=lambda x: -len(x[1]))] or ["- none yet"]
+    md += [f"- {g}: *{', '.join(sorted(set(c)))}*" for g, c in sorted(noted.items(), key=lambda x: -len(x[1]))] or ["- none yet"]
     md += ["", "## Strengths the market wants (keep these prominent)", "",
            ", ".join(f"{r['skill']} ({r['pct']})" for r in have[:25]) or "-", ""]
     (ws.root / "skills_gap.md").write_text("\n".join(md), encoding="utf-8")
