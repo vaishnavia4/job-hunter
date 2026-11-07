@@ -368,6 +368,11 @@ def lookup(ws, question_text, options=None):
         if own:
             res.update(answer=own["answer"], source=own.get("source", "setup"), confidence=0.9, status=STATUS_OK, note=own.get("note", ""))
             return _with_option(res, options, own.get("options_hint"), "")
+        # standing consent recorded in profile.json consent_policy (default "ask")
+        if str(((prof.get("consent_policy") or {}).get("legal_attestations", "ask"))).startswith("preauthorized"):
+            res.update(answer="Yes", source="consent_policy", confidence=0.9, status=STATUS_OK,
+                       note="Ticked under the user's standing consent (profile consent_policy.legal_attestations); list it in the report.")
+            return _with_option(res, options, None, "")
         res.update(status=TICK, note=q.get("notes", "") or "Legal attestation - the user ticks this.")
         return res
     if q["type"] == "per_job_essay":

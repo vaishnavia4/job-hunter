@@ -176,9 +176,17 @@ def main():
     v2 = answers.verify_form(tws, [{"label": "Please provide the name of your current (or most recent) company", "value": "Acme Corp"}])
     fails += not v2["pass"]
     print(("PASS" if v2["pass"] else "FAIL") + " | verify_form accepts a freshly recorded answer")
+    # consent_policy: attestations stay USER_MUST_TICK by default, become "Yes" only under recorded standing consent
+    att = "I certify that all information provided in this application is true and complete"
+    default_tick = answers.lookup(tws, att)["status"] == "USER_MUST_TICK"
+    (tmp / "profile" / "profile.json").write_text(json.dumps({"consent_policy": {"legal_attestations": "preauthorized_report_each"}}), encoding="utf-8")
+    r_pre = answers.lookup(Workspace(tmp), att, ["Yes", "No"])
+    cp_ok = default_tick and r_pre["status"] == "ok" and r_pre["option"] == "Yes" and r_pre["source"] == "consent_policy"
+    fails += not cp_ok
+    print(("PASS" if cp_ok else f"FAIL default_tick={default_tick} pre={r_pre}") + " | attestations: ask by default, Yes under consent_policy")
     shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 6 - fails}/{len(CASES) + 6} passed")
+    print(f"\n{len(CASES) + 7 - fails}/{len(CASES) + 7} passed")
     sys.exit(1 if fails else 0)
 
 
