@@ -5,15 +5,13 @@ Rules baked in (see skills/apply/lessons.md): never guess (unknown -> report + l
 """
 import re
 
-from .. import answers as A
-
 BIG_LIST = 60  # lists longer than this (country, phone code, location) are typed into, not read
 YES_RX = re.compile(r"^(yes|true|y|i agree|i acknowledge|agree)\b", re.I)
 SUBMIT_RX = re.compile(r"^\s*(submit|submit application|send application|finish|complete application)\s*$", re.I)
 
 
 def clean(s):
-    return re.sub(r"\s+", " ", (s or "").replace("​", "")).strip()
+    return re.sub(r"\s+", " ", (s or "").replace("\u200b", "")).strip()
 
 
 def label_text(s):
@@ -278,3 +276,42 @@ def education(ctx):
     ed = (ctx.master.get("education") or [{}])[0]
     school = clean((ed.get("school") or "").split(",")[0])
     return school, ed.get("degree", "")
+
+
+# ------------------------------------------------------------------ pure helpers (unit-tested offline)
+PLACEHOLDER_RX = re.compile(r"^(select one|select\.*|choose\.*|choose one|please select\.*|--+|-select-|select an option|no items\.?)$", re.I)
+
+
+def norm(s):
+    """Case/space/punctuation-insensitive form used for exact option matching."""
+    return re.sub(r"[^a-z0-9&+#]+", " ", clean(s).lower()).strip()
+
+
+def exact_option(options, want):
+    """The option equal to `want` (case, space and punctuation insensitive) or None. Never a partial match:
+    'X College, Some University' is NOT 'Some University'."""
+    w = norm(want)
+    if not w:
+        return None
+    return next((o for o in options or [] if norm(o) == w), None)
+
+
+def is_empty_value(v):
+    v = clean(v if isinstance(v, str) else ("" if v is None else str(v)))
+    return not v or bool(PLACEHOLDER_RX.match(v))
+
+
+def empty_required(fields):
+    """Labels of read-back fields that are required but empty / still on a placeholder ('Select One')."""
+    out = []
+    for f in fields or []:
+        if f.get("required") and is_empty_value(f.get("value")):
+            lab = clean(f.get("label")) or "?"
+            if lab not in out:
+                out.append(lab)
+    return out
+
+
+def field_errors(fields):
+    """[(label, error text)] for read-back fields that show a validation message."""
+    return [(clean(f.get("label")) or "?", clean(f.get("error"))) for f in fields or [] if clean(f.get("error"))]

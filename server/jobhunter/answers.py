@@ -462,7 +462,6 @@ def verify_form(ws, fields):
                 out["unknown"].append({"label": label, "value": value, "note": r["note"]})
             continue
         expected = r.get("option") or r["answer"]
-        ne = norm(str(expected))
         if not nv:
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "problem": "empty"})
         elif equivalent(value, expected):

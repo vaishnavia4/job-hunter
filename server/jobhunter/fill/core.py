@@ -32,6 +32,8 @@ class Ctx:
         self.resume = next(iter(sorted(folder.glob("Resume_*.pdf"))), None)
         self.cover = next(iter(sorted(folder.glob("CoverLetter_*.pdf"))), None)
         self.steps, self.filled, self.unknown, self.problems = [], [], [], []
+        self.auth_state = None  # Workday: signed_in | needs_user_checkbox | captcha | signin_failed | ...
+        self.readback = {}  # step name -> [{label, value, required, error}] read from the page after filling
 
     # ---- reporting
     def step(self, s):
@@ -134,6 +136,10 @@ def run(workspace, folder, url=None, headed=True, profile_dir=None, keep_open=Fa
         except Exception:
             pass
         summary.update(steps_completed=ctx.steps, filled=ctx.filled, unknown_questions=ctx.unknown, problems=ctx.problems)
+        if ctx.auth_state:
+            summary["auth_state"] = ctx.auth_state
+        if ctx.readback:
+            summary["readback"] = ctx.readback
         try:
             (folder / "fill_report.json").write_text(json.dumps(summary, indent=1, ensure_ascii=False), encoding="utf-8")
         except Exception:

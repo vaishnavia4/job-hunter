@@ -309,6 +309,22 @@ FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever, "ashby": fetch
 DETAIL_FETCHERS = {"smartrecruiters": smartrecruiters_detail, "workday": workday_detail}  # neogov feed already has full text
 
 
+# Oracle Taleo (e.g. University of Colorado: token "cu.taleo.net/2"). taleo.py imports helpers from this module,
+# so it is imported lazily here to avoid a circular import.
+def _fetch_taleo(token, cfg):
+    from .taleo import fetch_taleo
+    return fetch_taleo(token, cfg)
+
+
+def _taleo_detail(job):
+    from .taleo import taleo_detail
+    return taleo_detail(job)
+
+
+FETCHERS["taleo"] = _fetch_taleo
+DETAIL_FETCHERS["taleo"] = _taleo_detail
+
+
 # ---------------------------------------------------------------- vocabulary
 def load_vocab(ws: Workspace):
     """config/skills.json -> {name: (compiled_regex, have)} ; have in {True, 'secondary', False}."""

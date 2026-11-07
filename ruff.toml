@@ -1,0 +1,10 @@
+# Minimal lint gate for CI: syntax errors, undefined names, unused imports/variables, real statement bugs.
+target-version = "py311"
+line-length = 160
+extend-exclude = ["templates"]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+# house style used across the package: named lambdas (AID = lambda ...), short names (l), and
+# compact `a; b` one-liners (argparse setup, report rows)
+ignore = ["E702", "E731", "E741"]

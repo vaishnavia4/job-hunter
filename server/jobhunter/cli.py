@@ -21,6 +21,9 @@
   verify <fields.json>         verify read-back form fields
   final-check <review.json>    last pre-submit re-verification (fields, files, page text red flags)
   selfcheck                    compile every package module (syntax guard)
+  responses [--days N] [--dry-run]  read employer replies in Gmail, classify, update tracker
+  report [--days 7] [--out reports]  weekly funnel/response report (+ Weekly sheet in tracker.xlsx)
+  prep <folder|job_id>         write interview_prep.md for an application
 """
 import argparse
 import json
@@ -28,6 +31,12 @@ import sys
 
 from . import alerts, answers, applications, extract, intake, portfolio, resume, search, skills_gap
 from .workspace import Workspace, init_workspace
+
+
+def _out(text):
+    """Print text that may hold non-cp1252 characters (Windows console) without crashing."""
+    enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+    print(str(text).encode(enc, "replace").decode(enc, "replace"))
 
 
 def _p(obj):
@@ -59,8 +68,12 @@ def main(argv=None):
     sub.add_parser("selfcheck")
     cl = sub.add_parser("cleanup"); cl.add_argument("--dry-run", action="store_true")
     sub.add_parser("export")
+    mv = sub.add_parser("mail-verify"); mv.add_argument("--host", default=""); mv.add_argument("--sender", default=""); mv.add_argument("--minutes", type=int, default=15); mv.add_argument("--wait", type=int, default=0)
     hi = sub.add_parser("h1b-import"); hi.add_argument("--years", default="2022,2023")
     hl = sub.add_parser("h1b"); hl.add_argument("company")
+    rs = sub.add_parser("responses"); rs.add_argument("--days", type=int, default=14); rs.add_argument("--dry-run", action="store_true")
+    wr = sub.add_parser("report"); wr.add_argument("--days", type=int, default=7); wr.add_argument("--out", default="reports")
+    ip = sub.add_parser("prep"); ip.add_argument("target", help="application folder or tracker job_id")
     a = ap.parse_args(argv)
 
     if a.cmd == "init":
@@ -136,12 +149,29 @@ def main(argv=None):
     elif a.cmd == "h1b":
         from . import h1b
         _p(h1b.lookup(ws, a.company) or {"company": a.company, "h1b": "no record"})
+    elif a.cmd == "mail-verify":
+        from . import mail_verify
+        _p(mail_verify.find_verification(ws, a.minutes, a.host, a.sender, a.wait) or {"found": False})
     elif a.cmd == "export":
         _p({"xlsx": ws.export_xlsx()})
     elif a.cmd == "final-check":
         res = answers.final_review(ws, json.load(open(a.review_json, encoding="utf-8")))
         _p(res)
         sys.exit(0 if res["ok"] else 1)
+    elif a.cmd == "responses":
+        from . import responses
+        res = responses.read_responses(ws, days=a.days, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr))
+        _out(res.pop("digest"))
+        _p({k: v for k, v in res.items() if k != "results"} | {"results": [
+            {k: r[k] for k in ("date", "class", "confident", "companies", "subject", "status_change")} for r in res["results"]]})
+    elif a.cmd == "report":
+        from . import report
+        res = report.weekly_report(ws, days=a.days, out_dir=a.out)
+        _out(res.pop("markdown"))
+        _p(res)
+    elif a.cmd == "prep":
+        from . import prep
+        _p(prep.interview_prep(ws, a.target))
 
 
 if __name__ == "__main__":

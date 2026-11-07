@@ -210,5 +210,43 @@ def final_review(workspace: str = "", review: dict | None = None) -> str:
     return _j(answers.final_review(_ws(workspace), review or {}))
 
 
+
+@mcp.tool()
+def read_application_responses(workspace: str = "", days: int = 14, dry_run: bool = True) -> str:
+    """Read employer replies in Gmail (IMAP, headers first, bodies only for ATS / tracked-company senders), classify
+    each as application_received / rejected / interview / offer / action_needed / other, and match it to a tracker row.
+    With dry_run=false: moves status to rejected/interview/offer only for confident, unambiguous matches and only
+    forward, appends 'email <date>: <class> - <subject>' notes, and records data/responses.json (Message-ID dedupe).
+    Returns counts, status changes and a digest (subjects only, never email bodies)."""
+    from jobhunter import responses
+    with _quiet():
+        res = responses.read_responses(_ws(workspace), days=days or 14, dry_run=dry_run, log=lambda m: None)
+    res["results"] = [{k: r[k] for k in ("date", "class", "confident", "companies", "subject", "status_change")}
+                      for r in res["results"]]
+    return _j(res)
+
+
+@mcp.tool()
+def weekly_report(workspace: str = "", days: int = 7, out_dir: str = "reports") -> str:
+    """Weekly report from the tracker + data/responses.json: applications this period/total, funnel
+    (found -> tailored -> applied -> responded -> interview -> offer), response/interview rates by ATS/source,
+    company type (H-1B flags), tailoring level and location, top skip reasons, jobs waiting on the user, and 3
+    data-driven suggestions. Writes reports/<date>-weekly.md and a 'Weekly' sheet in tracker.xlsx."""
+    from jobhunter import report
+    with _quiet():
+        res = report.weekly_report(_ws(workspace), days=days or 7, out_dir=out_dir or "reports")
+    return _j(res)
+
+
+@mcp.tool()
+def interview_prep(workspace: str = "", target: str = "") -> str:
+    """Write applications/<folder>/interview_prep.md for an application folder name or tracker job_id: role snapshot,
+    likely questions from the JD, a STAR story per requirement quoted from master_resume.json (metrics exact),
+    reworded resume lines to defend (changes.md), honest gap framing, and 5 questions to ask them. No LLM calls."""
+    from jobhunter import prep
+    with _quiet():
+        res = prep.interview_prep(_ws(workspace), target)
+    return _j(res)
+
 if __name__ == "__main__":
     mcp.run()

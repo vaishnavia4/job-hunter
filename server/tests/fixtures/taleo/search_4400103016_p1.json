@@ -1,0 +1,45 @@
+{
+ "requisitionList": [
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "495998",
+   "contestNo": "41253",
+   "column": [
+    "Director of Leadership Program",
+    "[\"Colorado Springs\"]",
+    "Nov 6, 2026"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  },
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "497292",
+   "contestNo": "41525",
+   "column": [
+    "Assistant Professor - Military Leader Development",
+    "[\"Colorado Springs\"]",
+    "Nov 3, 2026"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  }
+ ],
+ "pagingData": {
+  "currentPageNo": 1,
+  "pageSize": 25,
+  "totalCount": 27
+ }
+}
