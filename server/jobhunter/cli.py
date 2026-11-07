@@ -59,6 +59,8 @@ def main(argv=None):
     sub.add_parser("selfcheck")
     cl = sub.add_parser("cleanup"); cl.add_argument("--dry-run", action="store_true")
     sub.add_parser("export")
+    hi = sub.add_parser("h1b-import"); hi.add_argument("--years", default="2022,2023")
+    hl = sub.add_parser("h1b"); hl.add_argument("company")
     a = ap.parse_args(argv)
 
     if a.cmd == "init":
@@ -128,6 +130,12 @@ def main(argv=None):
     elif a.cmd == "cleanup":
         from . import cleanup
         _p(cleanup.run(ws, a.dry_run))
+    elif a.cmd == "h1b-import":
+        from . import h1b
+        _p(h1b.import_data(ws, [int(y) for y in a.years.split(",")]))
+    elif a.cmd == "h1b":
+        from . import h1b
+        _p(h1b.lookup(ws, a.company) or {"company": a.company, "h1b": "no record"})
     elif a.cmd == "export":
         _p({"xlsx": ws.export_xlsx()})
     elif a.cmd == "final-check":

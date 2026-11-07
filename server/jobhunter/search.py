@@ -425,6 +425,9 @@ class Scorer:
         prof = ws.profile()
         self.floor = (prof.get("job_preferences") or {}).get("salary_floor") or 0
         self.excluded = [e.lower() for e in (prof.get("job_preferences") or {}).get("excluded_companies", [])]
+        wa = prof.get("work_authorization") or {}
+        self.needs_sponsor = str(wa.get("requires_sponsorship_now_or_future", "")).lower().startswith("y")
+        self.h1b_cfg = c.get("h1b", {}) or {}
         self.max_age = c.get("max_age_days", 14)
 
     def in_preferred_or_remote(self, location):
@@ -500,6 +503,12 @@ class Scorer:
         i = desc.lower().find("sponsor")
         if i >= 0 and not re.search(r"no |not |unable|cannot", desc[max(0, i - 60):i], re.I):
             reasons.append("mentions sponsorship (check)")
+        if self.needs_sponsor and self.h1b_cfg.get("enabled", True):
+            from .h1b import score_adjust  # USCIS sponsor history (no-op until h1b-import has run)
+            pts, flag = score_adjust(self.ws, job.get("company", ""), self.h1b_cfg)
+            score += pts
+            if flag:
+                reasons.append(flag)
         job.update({"score": max(0, min(100, score)), "keyword_coverage": f"{coverage:.0%}", "keywords_have": have,
                     "keywords_secondary": sec, "keywords_gap": gaps, "age_days": age,
                     "salary": f"${lo:,}-${hi:,}" if hi else "", "flags": "; ".join(reasons)})
