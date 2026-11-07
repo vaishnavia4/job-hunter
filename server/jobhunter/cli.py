@@ -10,7 +10,7 @@
   archive-skipped              move skipped application folders to applications/_skipped
   validate-boards              check which company boards respond
   list [status]                list tracked jobs
-  prepare <job_id> | --next N  create application folder(s)
+  prepare <job_id> | --next N [--level low|medium|high]  create application folder(s) and set the tailoring level
   build <folder>               render tailored resume/cover letter + checks
   set <job_id> key=value ...   update tracker fields (e.g. status=applied)
   sync                         copy decision.json files into the tracker
@@ -48,8 +48,8 @@ def main(argv=None):
     pf = sub.add_parser("portfolio"); pf.add_argument("--out", default="portfolio"); pf.add_argument("--no-pdf", action="store_true")
     sub.add_parser("validate-boards")
     l = sub.add_parser("list"); l.add_argument("status", nargs="?")
-    pr = sub.add_parser("prepare"); pr.add_argument("job_id", nargs="?"); pr.add_argument("--next", type=int)
-    b = sub.add_parser("build"); b.add_argument("folder")
+    pr = sub.add_parser("prepare"); pr.add_argument("job_id", nargs="?"); pr.add_argument("--next", type=int); pr.add_argument("--level", choices=["low", "medium", "high"])
+    b = sub.add_parser("build"); b.add_argument("folder"); b.add_argument("--level", choices=["low", "medium", "high"])
     st = sub.add_parser("set"); st.add_argument("job_id"); st.add_argument("fields", nargs="*")
     sub.add_parser("sync"); sub.add_parser("skills-gap"); sub.add_parser("stats")
     an = sub.add_parser("answer"); an.add_argument("label"); an.add_argument("--options")
@@ -101,10 +101,16 @@ def main(argv=None):
                 print(f"{r['status']:9} [{r['score']:>3}] {r['company'][:22]:22} | {r['title'][:50]:50} | {r['job_id']}")
     elif a.cmd == "prepare":
         folders = applications.prepare_next(ws, a.next) if a.next else [applications.prepare(ws, a.job_id)]
+        lvl_set = []
+        for f in folders:
+            lvl = resume.tailor_level(ws, f, a.level)
+            resume.set_tailor_level(f, lvl)
+            lvl_set.append(f"{f.name}: tailor level {lvl} - {resume.LEVEL_GUIDE[lvl]}")
+        print("\n".join(lvl_set))
         for f in folders:
             print(f)
     elif a.cmd == "build":
-        _p(resume.build(ws, a.folder))
+        _p(resume.build(ws, a.folder, a.level))
     elif a.cmd == "set":
         _p(ws.set_fields(a.job_id, **dict(x.split("=", 1) for x in a.fields)))
     elif a.cmd == "sync":

@@ -1,10 +1,24 @@
 {
   "_note": "Applicant answers used to fill every application. Filled by job-setup. Only the user decides legal/EEO answers.",
   "personal": {
-    "first_name": "", "last_name": "", "full_name": "", "preferred_first_name": "", "preferred_last_name": "",
-    "email": "", "phone": "", "phone_digits": "",
-    "address_line1": "", "city": "", "state": "", "state_code": "", "zip": "", "country": "United States",
-    "linkedin": "", "github": "", "website": "", "languages": []
+    "first_name": "",
+    "last_name": "",
+    "full_name": "",
+    "preferred_first_name": "",
+    "preferred_last_name": "",
+    "email": "",
+    "phone": "",
+    "phone_digits": "",
+    "address_line1": "",
+    "city": "",
+    "state": "",
+    "state_code": "",
+    "zip": "",
+    "country": "United States",
+    "linkedin": "",
+    "github": "",
+    "website": "",
+    "languages": []
   },
   "work_authorization": {
     "authorized_to_work_in_us": "",
@@ -28,8 +42,20 @@
     "excluded_companies": [],
     "applications_per_day": 20
   },
-  "experience": { "years_total": null, "current_employer": "", "current_title": "", "skill_years": {} },
-  "education": { "degree": "", "field": "", "school": "", "location": "", "graduation_year": "", "graduation_year_policy": "Only fill when the form requires it." },
+  "experience": {
+    "years_total": null,
+    "current_employer": "",
+    "current_title": "",
+    "skill_years": {}
+  },
+  "education": {
+    "degree": "",
+    "field": "",
+    "school": "",
+    "location": "",
+    "graduation_year": "",
+    "graduation_year_policy": "Only fill when the form requires it."
+  },
   "certifications": [],
   "eeo_voluntary": {
     "gender": "Decline to self-identify",
@@ -57,5 +83,9 @@
     "approved_so_far": 0,
     "linkedin_easy_apply": "discovery_only",
     "legal_attestations": "user_clicks"
+  },
+  "tailoring": {
+    "default_level": "medium",
+    "_levels": "low = headline/summary/skills + max 4 bullets changed; medium = up to 12 bullets reworded; high = everything rewritten around the JD (still only true facts)"
   }
 }

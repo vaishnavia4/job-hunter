@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 from .search import load_vocab
-from .workspace import Workspace, load_json, slug
+from .workspace import Workspace, load_json, save_json, slug
 
 FONT = "Calibri"
 
@@ -220,10 +220,120 @@ def _flatten(r):
     return "\n".join(parts)
 
 
+# ---------------------------------------------------------------- tailoring levels
+# low    : headline, summary, skill order + at most 4 reworded/swapped bullets (easy for the user to own)
+# medium : up to 12 bullets reworded/reordered with JD keywords (default)
+# high   : every bullet may be rewritten around the JD; facts, numbers and skills must still come from the master
+LEVELS = {"low": 4, "medium": 12, "high": None}
+LEVEL_GUIDE = {
+    "low": "Change only the headline, summary and skill order, plus at most 4 bullets (swap in a more relevant master bullet "
+           "or lightly reword with JD keywords). Keep every other bullet word-for-word from the master resume.",
+    "medium": "Reorder and reword up to 12 bullets with the JD's vocabulary, drop irrelevant skill categories; keep each "
+              "bullet's facts and structure.",
+    "high": "Rewrite everything around the JD: every bullet reworded and ranked by JD relevance, summary mirroring the JD's "
+            "top requirements, projects chosen for the JD. Still ONLY facts, numbers, tools and skills from the master resume.",
+}
+
+
+def tailor_level(ws, folder, override=None):
+    """Level for a folder: explicit override > job.json 'tailor_level' > profile tailoring.default_level > medium."""
+    if override:
+        lvl = override
+    else:
+        job = load_json(Path(folder) / "job.json", {}) or {}
+        lvl = job.get("tailor_level") or ((ws.profile() or {}).get("tailoring") or {}).get("default_level") or "medium"
+    lvl = str(lvl).lower()
+    if lvl not in LEVELS:
+        raise ValueError(f"tailor level must be one of {list(LEVELS)}, got {lvl!r}")
+    return lvl
+
+
+def set_tailor_level(folder, level):
+    p = Path(folder) / "job.json"
+    job = load_json(p, {}) or {}
+    job["tailor_level"] = level
+    save_json(p, job)
+
+
+def _plain(s):
+    return re.sub(r"\s+", " ", re.sub(r"\*\*", "", s or "")).strip()
+
+
+def change_report(tailored, master):
+    """Compare each tailored bullet with the closest master bullet of the same employer.
+    Returns {"roles": [...], "reworded": n, "kept": n, "dropped": n, "headline_changed": bool, "summary_changed": bool}."""
+    from difflib import SequenceMatcher
+    roles, rew, kept, dropped = [], 0, 0, 0
+    m_by = {e.get("company"): e for e in master.get("experience", [])}
+    for t in tailored.get("experience", []):
+        mb = [_plain(b) for b in (m_by.get(t.get("company")) or {}).get("bullets", [])]
+        used, items = set(), []
+        for b in t.get("bullets", []):
+            pb = _plain(b)
+            best, score = None, 0.0
+            for i, m in enumerate(mb):
+                s = SequenceMatcher(None, pb.lower(), m.lower()).ratio()
+                if s > score:
+                    best, score = i, s
+            if best is not None:
+                used.add(best)
+            status = "kept" if score >= 0.97 else "reworded"
+            kept += status == "kept"
+            rew += status == "reworded"
+            items.append({"status": status, "tailored": pb, "closest_master": mb[best] if best is not None else "",
+                          "similarity": round(score, 2)})
+        drop = [m for i, m in enumerate(mb) if i not in used]
+        dropped += len(drop)
+        roles.append({"company": t.get("company"), "bullets": items, "dropped": drop})
+    return {"roles": roles, "reworded": rew, "kept": kept, "dropped": dropped,
+            "headline_changed": _plain(tailored.get("headline")) != _plain(master.get("headline")),
+            "summary_changed": _plain(tailored.get("summary")) != _plain(master.get("summary"))}
+
+
+def changes_markdown(rep, level, company=""):
+    budget = LEVELS[level]
+    lines = [f"# Tailoring changes{(' - ' + company) if company else ''}", "",
+             f"**Level: {level}** ({LEVEL_GUIDE[level]})", "",
+             f"Bullets kept word-for-word: **{rep['kept']}** | reworded or swapped: **{rep['reworded']}**"
+             + (f" (budget {budget})" if budget is not None else " (no limit)") + f" | master bullets not used: {rep['dropped']}",
+             f"Headline changed: {'yes' if rep['headline_changed'] else 'no'} | summary changed: {'yes' if rep['summary_changed'] else 'no'}",
+             "", "Be ready to talk about every reworded line: each one must still describe something you really did.", ""]
+    for r in rep["roles"]:
+        lines += [f"## {r['company']}", ""]
+        for b in r["bullets"]:
+            if b["status"] == "kept":
+                lines.append(f"- KEPT: {b['tailored']}")
+            else:
+                lines += [f"- REWORDED ({int(b['similarity'] * 100)}% similar):", f"  - now: {b['tailored']}",
+                          f"  - from: {b['closest_master']}"]
+        if r["dropped"]:
+            lines += ["", "Not used for this job:"] + [f"- {d}" for d in r["dropped"]]
+        lines.append("")
+    return "\n".join(lines)
+
+
+_NUM = re.compile(r"\d+(?:[.,]\d+)?\s*(?:%|[kKmMbB]\b|\+)?")
+
+
+def _numbers(text):
+    out = set()
+    text = re.sub(r"\b0[- ]to[- ]1\b|\b24\s*[x×]\s*7\b|\bTLS\s*1\.\d\b|\bv?\d+\.\d+\.\d+\b", " ", _plain(text), flags=re.I)  # phrases, not metrics
+    for n in _NUM.findall(text):
+        core = re.sub(r"[\s,]", "", n).lower().rstrip("+")
+        if core and not re.fullmatch(r"(19|20)\d\d", core):  # years are checked via dates
+            out.add(core)
+    return out
+
+
 def truth_check(tailored, master):
-    """Skills/certs must exist in master; employers/titles/dates must match; headline must be one title."""
+    """Skills/certs must exist in master; employers/titles/dates must match; headline must be one title;
+    every number in the summary and bullets must appear in the master (guards heavy rewording)."""
     master_text = json.dumps(master).lower()
     issues = []
+    m_nums = _numbers(json.dumps(master, ensure_ascii=False))
+    t_text = " ".join([tailored.get("summary", "")] + [b for e in tailored.get("experience", []) for b in e.get("bullets", [])])
+    for n in sorted(_numbers(t_text) - m_nums):
+        issues.append(f"Number not in master resume: '{n}' (metrics must be exact)")
     for cat, items in (tailored.get("skills") or {}).items():
         for s in items:
             core = re.sub(r"\(.*?\)", "", s).strip().lower()
@@ -255,10 +365,13 @@ def match_report(ws, job, tailored, master):
 
 
 # ---------------------------------------------------------------- main entry
-def build(ws: Workspace, folder):
+def build(ws: Workspace, folder, level=None):
     folder = Path(folder)
     if not folder.is_absolute():
         folder = ws.root / folder
+    if level:
+        set_tailor_level(folder, tailor_level(ws, folder, level))
+    lvl = tailor_level(ws, folder)
     profile, master = ws.profile(), ws.master()
     tailored = load_json(folder / "tailored.json")
     if not tailored:
@@ -291,6 +404,12 @@ def build(ws: Workspace, folder):
            f"**True gaps (not in master resume - NOT added):** {', '.join(gaps) or 'none'}", "",
            f"**Truth check:** {'PASS' if not issues else 'REVIEW'}"] + [f"- {i}" for i in issues]
     (folder / "match_report.md").write_text("\n".join(rep), encoding="utf-8")
+    ch = change_report(tailored, master)
+    (folder / "changes.md").write_text(changes_markdown(ch, lvl, job.get("company", "")), encoding="utf-8")
+    budget = LEVELS[lvl]
+    level_note = (f"{ch['reworded']} bullets reworded, over the '{lvl}' budget of {budget}: keep more master bullets word-for-word"
+                  if budget is not None and ch["reworded"] > budget else "ok")
     out.update({"coverage": f"{pct:.0%}", "gaps": gaps, "could_add": could_add,
-                "truth_check": "PASS" if not issues else issues})
+                "truth_check": "PASS" if not issues else issues,
+                "tailor_level": lvl, "bullets_reworded": ch["reworded"], "bullets_kept": ch["kept"], "level_check": level_note})
     return out

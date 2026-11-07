@@ -115,22 +115,29 @@ def list_jobs(workspace: str = "", status: str = "") -> str:
 
 
 @mcp.tool()
-def prepare_application(workspace: str = "", job_id: str = "", next_n: int = 0) -> str:
+def prepare_application(workspace: str = "", job_id: str = "", next_n: int = 0, level: str = "") -> str:
     """Create applications/<Company>_<Role>/ with job.json, JD.md and notes.md for a tracked job
-    (or for the next `next_n` highest-scoring 'new' jobs)."""
+    (or for the next `next_n` highest-scoring 'new' jobs). `level` = low | medium | high tailoring depth
+    (default: profile tailoring.default_level, else medium). Returns each folder, its level and what that level allows."""
     ws = _ws(workspace)
     with _quiet():
         folders = applications.prepare_next(ws, next_n) if next_n else [applications.prepare(ws, job_id)]
-    return _j([str(f) for f in folders])
+        out = []
+        for f in folders:
+            lvl = resume.tailor_level(ws, f, level or None)
+            resume.set_tailor_level(f, lvl)
+            out.append({"folder": str(f), "tailor_level": lvl, "level_rules": resume.LEVEL_GUIDE[lvl]})
+    return _j(out)
 
 
 @mcp.tool()
-def build_resume(workspace: str = "", folder: str = "") -> str:
+def build_resume(workspace: str = "", folder: str = "", level: str = "") -> str:
     """Render tailored.json (+ cover_letter.md) in an application folder to DOCX/PDF, run the truth check
     (no skill/cert/employer/date not in master_resume.json; single-title headline), check page count (<=2)
-    and write match_report.md. Fix every issue it reports, then rebuild."""
+    and write match_report.md + changes.md (every bullet: kept / reworded vs the master, checked against the
+    low/medium/high tailoring budget). Every number must exist in the master. Fix every issue it reports, then rebuild."""
     with _quiet():
-        return _j(resume.build(_ws(workspace), folder))
+        return _j(resume.build(_ws(workspace), folder, level or None))
 
 
 @mcp.tool()
