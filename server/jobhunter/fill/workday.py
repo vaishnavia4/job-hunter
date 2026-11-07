@@ -1,14 +1,38 @@
 """Workday: Apply Manually, sign-in, My Information, My Experience, questions, disclosures; stops at Review.
 (Ported from the reference workday_experience.js; not live-tested.)"""
+import json
 import re
 
 from . import common as C
 
 MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
-SKILLS = ["Microsoft Azure", "Azure DevOps", "Terraform", "Kubernetes", "Amazon Web Services", "Python", "PowerShell",
-          "Site Reliability Engineering", "Docker", "Continuous Integration"]
+
 AID = lambda a: f'[data-automation-id="{a}"]'
 LEGAL_RX = re.compile(r"agree|terms|conditions|arbitrat|certif|acknowledg|consent|privacy", re.I)
+
+
+def _top_skills(ctx, n=10):
+    """Workday skill tags: profile.workday_skills if set, else the first items of the resume's skill categories."""
+    custom = ctx.profile.get("workday_skills") or []
+    if custom:
+        return custom[:n]
+    tailored = {}
+    folder = getattr(ctx, "folder", None)
+    if folder and (folder / "tailored.json").exists():  # JD-ordered skills for this job
+        tailored = json.loads((folder / "tailored.json").read_text(encoding="utf-8")).get("skills") or {}
+    out = []
+
+    def walk(x):
+        if isinstance(x, str):
+            out.append(re.sub(r"\s*\(.*?\)", "", x).strip())
+        elif isinstance(x, dict):
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    walk(tailored or (ctx.master.get("skills") or {}).get("primary") or ctx.master.get("skills") or {})
+    return [s for s in dict.fromkeys(out) if s][:n]
 
 
 def _mmyyyy(s):
@@ -255,18 +279,25 @@ def _experience(ctx):
         if btn.count():
             _dropdown_choice(ctx, btn.first, "Degree")
         fos = ed.get_by_label("Field of Study")
-        if fos.count():
-            fos.first.fill("Computer Science")
+        field = (ctx.profile.get("education") or {}).get("field") or ""
+        if not field:
+            deg = ((ctx.master.get("education") or [{}])[0]).get("degree", "")
+            field = deg.split(",", 1)[1].strip() if "," in deg else ""
+        if fos.count() and field:
+            fos.first.fill(field)
             fos.first.press("Enter")
             page.wait_for_timeout(1500)
-            o = page.locator('[data-automation-id="promptOption"]:visible', has_text=re.compile("Computer", re.I))
+            o = page.locator('[data-automation-id="promptOption"]:visible', has_text=re.compile(re.escape(field.split()[0]), re.I))
             if o.count():
                 o.first.click()
-                ctx.fill_record("Field of Study", "Computer Science")
+                ctx.fill_record("Field of Study", C.clean(o.first.inner_text()) if hasattr(C, "clean") else field)
+            else:
+                ctx.problem(f"field of study '{field}' not in Workday list - user must pick it")
     # skills
     sbox = page.get_by_role("textbox", name=re.compile("Type to Add Skills", re.I))
     if sbox.count():
-        for s in SKILLS:
+        skills = _top_skills(ctx)
+        for s in skills:
             sbox.fill(s)
             sbox.press("Enter")
             page.wait_for_timeout(1300)
@@ -279,7 +310,7 @@ def _experience(ctx):
                 o.nth(k).click()
             page.wait_for_timeout(300)
         page.keyboard.press("Escape")
-        ctx.fill_record("Skills", ", ".join(SKILLS))
+        ctx.fill_record("Skills", ", ".join(skills))
     # websites
     web = page.get_by_role("group", name="Websites", exact=True)
     urls = [u for u in (ctx.p("personal", "linkedin"), ctx.p("personal", "github")) if u]

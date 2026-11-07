@@ -57,6 +57,8 @@ def main(argv=None):
     vf = sub.add_parser("verify"); vf.add_argument("fields_json")
     fc = sub.add_parser("final-check"); fc.add_argument("review_json")
     sub.add_parser("selfcheck")
+    cl = sub.add_parser("cleanup"); cl.add_argument("--dry-run", action="store_true")
+    sub.add_parser("export")
     a = ap.parse_args(argv)
 
     if a.cmd == "init":
@@ -117,6 +119,11 @@ def main(argv=None):
         _p(answers.record(ws, a.label, a.answer, a.source, a.note, a.hints.split("|") if a.hints else None))
     elif a.cmd == "verify":
         _p(answers.verify_form(ws, json.load(open(a.fields_json, encoding="utf-8"))))
+    elif a.cmd == "cleanup":
+        from . import cleanup
+        _p(cleanup.run(ws, a.dry_run))
+    elif a.cmd == "export":
+        _p({"xlsx": ws.export_xlsx()})
     elif a.cmd == "final-check":
         res = answers.final_review(ws, json.load(open(a.review_json, encoding="utf-8")))
         _p(res)

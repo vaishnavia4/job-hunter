@@ -417,6 +417,9 @@ class Scorer:
             score += 5
         if hi is not None and self.floor and hi >= self.floor:
             score += 3
+        i = desc.lower().find("sponsor")
+        if i >= 0 and not re.search(r"no |not |unable|cannot", desc[max(0, i - 60):i], re.I):
+            reasons.append("mentions sponsorship (check)")
         job.update({"score": max(0, min(100, score)), "keyword_coverage": f"{coverage:.0%}", "keywords_have": have,
                     "keywords_secondary": sec, "keywords_gap": gaps, "age_days": age,
                     "salary": f"${lo:,}-${hi:,}" if hi else "", "flags": "; ".join(reasons)})
