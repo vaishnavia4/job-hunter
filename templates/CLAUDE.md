@@ -10,9 +10,9 @@ Explain what you're doing as you go — the user should understand and learn the
 - `profile/credentials.json` — local-only ATS passwords. Never echo, copy or log them.
 - `config/search.json` (titles, locations, scoring), `config/skills.json` (skill vocab + have-flags), `config/companies.json` (boards), `config/learning.json`.
 - `data/tracker.csv` (source of truth) → `tracker.xlsx` export. `skills_gap.md` = market demand vs. the user's skills.
-- `applications/<Company>_<Role>/` — `job.json`, `JD.md`, `tailored.json`, `cover_letter.md`, resume + cover letter `.docx/.pdf`, `match_report.md`, `notes.md`, `decision.json`, screenshots.
+- `applications/<Company>_<Role>/` (only for jobs you decided to apply to; skips live in the tracker) — `job.json`, `JD.md`, `tailored.json`, `cover_letter.md`, resume + cover letter `.docx/.pdf`, `match_report.md`, `notes.md`, `decision.json`, screenshots.
 
-Tools: the `jobs` MCP server (`search_jobs`, `list_jobs`, `prepare_application`, `build_resume`, `update_status`, `sync_decisions`, `skills_gap_report`, `stats`) — or the CLI `python -m jobhunter <cmd> --workspace .` from the plugin's `server/` folder.
+Tools: the `jobs` MCP server (`search_jobs`, `read_job_alerts`, `add_job`, `archive_skipped`, `list_jobs`, `prepare_application`, `build_resume`, `update_status`, `sync_decisions`, `skills_gap_report`, `stats`) — or the CLI `python -m jobhunter <cmd> --workspace .` from the plugin's `server/` folder.
 
 ## Non-negotiable rules
 1. **Never invent anything.** No skill, tool, metric, title, date, employer or certification that is not in `master_resume.json`. Reword, reorder and select only. If the user tells you a new fact, add it to the master first (and ask when it conflicts with what's there).
@@ -27,7 +27,8 @@ Tools: the `jobs` MCP server (`search_jobs`, `list_jobs`, `prepare_application`,
 
 ## Daily flow (see the `job-batch` skill)
 1. `search_jobs` (also refreshes `skills_gap.md`).
-2. Screen each new job's JD → `decision.json` (`apply` with honest fit % and gaps, or `skip` with reason) → `sync_decisions`.
-3. `prepare_application` → write `tailored.json` + `cover_letter.md` → `build_resume` until 2 pages + PASS. Verify the headline in the PDF before uploading.
+2. **Screen from `jobs/jd/<id>.json` first (no folder yet).** Decide `apply` (honest fit % and gaps) or `skip` (reason). Record skips in the tracker only (`update_status` status=skipped + notes). **Create the application folder only for `apply`** (`prepare_application`), then write `decision.json` and `sync_decisions`. Old skipped folders: `archive-skipped` moves them to `applications/_skipped`.
+3. Write `tailored.json` + `cover_letter.md` -> `build_resume` until 2 pages + PASS. Verify the headline in the PDF before uploading. When delegating screening or tailoring to helper agents, start them with `model: "sonnet"`.
 4. Apply with the browser (see the `apply` skill playbooks) → screenshot → `update_status`.
 - **Answer bank (mandatory):** before filling ANY application field call `lookup_answer` (MCP `mcp__plugin_job-hunter_jobs__lookup_answer`, or `python -m jobhunter --workspace . answer "<label>" --options "a|b|c"` from the job-hunter plugin's `server/` folder) and use its answer; every time the user corrects or fills an answer, `record_answer(..., source="user_correction")`; before saying "ready", read back all fields and run `verify_form` until it passes. Answers live in `profile/answer_bank.json`.
+- **Manual links:** when the user pastes a job URL, `add_job` it, screen it, and apply on the company's own site (LinkedIn/Indeed links are discovery only). **Alerts:** `read_job_alerts` reads LinkedIn/Jobright alert emails (needs a Gmail App Password in `profile/credentials.json`).

@@ -2,7 +2,7 @@
 
   python server/tests/test_answers.py [WORKSPACE]      (default: a temp workspace with a sample bank)
 
-With a real workspace (e.g. Vaishnavi's) it checks her stored answers; with no argument it builds a fixture.
+With a real workspace it checks your stored answers; with no argument it builds a fixture.
 """
 import json
 import shutil
@@ -77,18 +77,47 @@ def main():
     # verify_form: wrong race + resume in cover-letter box + missing required
     v = answers.verify_form(ws, [
         {"label": "Race", "value": "Asian: East Asian", "options": RACE_GH},
-        {"label": "Cover Letter", "value": "Resume_Vaishnavi_Akki_DoorDash_USA.pdf", "kind": "file"},
-        {"label": "Resume/CV*", "value": "Resume_Vaishnavi_Akki_DoorDash_USA.pdf", "kind": "file", "required": True},
+        {"label": "Cover Letter", "value": "Resume_Jane_Doe_Acme_USA.pdf", "kind": "file"},
+        {"label": "Resume/CV*", "value": "Resume_Jane_Doe_Acme_USA.pdf", "kind": "file", "required": True},
         {"label": "LinkedIn Profile*", "value": "", "required": True},
         {"label": "Pronouns", "value": "She/Her/Hers", "options": ["She/Her/Hers", "He/Him/His"]},
-        {"label": "Phone*", "value": "(571) 786-9754"},
+        {"label": "Phone*", "value": "(555) 010-0000"},
     ])
     vf_ok = (not v["pass"] and any(m["label"] == "Race" for m in v["mismatches"]) and v["file_problems"]
              and "LinkedIn Profile*" in v["missing_required"] and "Pronouns" in v["ok"])
     fails += not vf_ok
     print(("PASS" if vf_ok else "FAIL") + " | verify_form flags East Asian, resume-in-cover-letter, missing LinkedIn; accepts pronouns/phone")
+    # equivalence: decline variants, yes/no prefixes, "<Company> careers website"
+    EQ = [("I don't wish to answer", "Decline to self-identify", True),
+          ("Prefer not to say", "I don’t wish to answer", True),
+          ("No, I do not have a disability and have not had one in the past", "No", True),
+          ("Yes, I have a disability", "No", False),
+          ("Acme careers website", "Company careers website", True),
+          ("LinkedIn", "Company careers website", False),
+          ("Asian: East Asian", "Asian: South Asian", False)]
+    eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
+    fails += bool(eq_fail)
+    print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")
+    # record() then lookup() must match freshly recorded wordings, punctuation-insensitively
+    tmp = fixture_workspace()
+    tws = Workspace(tmp)
+    rec = [("Please provide the name of your current (or most recent) company", "Acme Corp", "Please provide the name of your current or most recent company"),
+           ("Select up to 2 ethnicities", "South Asian", "select up to 2 ethnicities:")]
+    rec_fail = []
+    for label, ans, relabel in rec:
+        answers.record(tws, label, ans)
+        for t in (label, relabel):
+            r = answers.lookup(tws, t)
+            if r["status"] != "ok" or r["answer"] != ans:
+                rec_fail.append((t, r["status"], r["answer"]))
+    fails += bool(rec_fail)
+    print(("FAIL " + str(rec_fail)) if rec_fail else "PASS | record() + lookup() match fresh wordings punctuation-insensitively")
+    v2 = answers.verify_form(tws, [{"label": "Please provide the name of your current (or most recent) company", "value": "Acme Corp"}])
+    fails += not v2["pass"]
+    print(("PASS" if v2["pass"] else "FAIL") + " | verify_form accepts a freshly recorded answer")
+    shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 1 - fails}/{len(CASES) + 1} passed")
+    print(f"\n{len(CASES) + 4 - fails}/{len(CASES) + 4} passed")
     sys.exit(1 if fails else 0)
 
 

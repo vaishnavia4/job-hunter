@@ -1,5 +1,5 @@
 {
-  "_note": "Job boards searched. greenhouse/lever/ashby/smartrecruiters = board tokens from the company's careers URL; workday = 'tenant.wdN/SiteName' from https://tenant.wdN.myworkdayjobs.com/SiteName; remotive = categories (software-dev, devops, data, product, business, finance-legal, customer-support, sales-business, marketing, hr, all-others). Add employers relevant to the user's field; run validate_boards after editing.",
+  "_note": "Job boards searched. greenhouse/lever/ashby/smartrecruiters = board tokens from the company's careers URL; workday = 'tenant.wdN/SiteName' from https://tenant.wdN.myworkdayjobs.com/SiteName; amazon = location queries for amazon.jobs (e.g. 'remote', a state or city; search terms come from your target titles); remotive = categories (software-dev, devops, data, product, business, finance-legal, customer-support, sales-business, marketing, hr, all-others). Add employers relevant to the user's field; run validate_boards after editing.",
   "greenhouse": [
     "airbnb",
     "stripe",
@@ -208,5 +208,8 @@
     "data",
     "product",
     "business"
+  ],
+  "amazon": [
+    "remote"
   ]
 }

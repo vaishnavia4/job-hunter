@@ -2,7 +2,11 @@
 
   init                         create workspace layout from templates
   extract <resume-file>        print resume text
-  search [--limit N] [--analyze-only] [--dry-run]
+  search [--limit N] [--analyze-only] [--dry-run] [--exclude-ats a,b] [--preferred-location]
+  alerts [--days N] [--dry-run]  read LinkedIn/Jobright alert emails (Gmail App Password)
+  add-job --url URL [--title T --company C --location L --description-file F]
+  portfolio [--out DIR] [--no-pdf]  build public portfolio data, site files, resume PDF, profile README
+  archive-skipped              move skipped application folders to applications/_skipped
   validate-boards              check which company boards respond
   list [status]                list tracked jobs
   prepare <job_id> | --next N  create application folder(s)
@@ -19,7 +23,7 @@ import argparse
 import json
 import sys
 
-from . import answers, applications, extract, resume, search, skills_gap
+from . import alerts, answers, applications, extract, intake, portfolio, resume, search, skills_gap
 from .workspace import Workspace, init_workspace
 
 
@@ -33,7 +37,11 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("init")
     e = sub.add_parser("extract"); e.add_argument("path")
-    s = sub.add_parser("search"); s.add_argument("--limit", type=int); s.add_argument("--analyze-only", action="store_true"); s.add_argument("--dry-run", action="store_true")
+    s = sub.add_parser("search"); s.add_argument("--limit", type=int); s.add_argument("--analyze-only", action="store_true"); s.add_argument("--dry-run", action="store_true"); s.add_argument("--exclude-ats", default=""); s.add_argument("--preferred-location", action="store_true")
+    al = sub.add_parser("alerts"); al.add_argument("--days", type=int); al.add_argument("--dry-run", action="store_true")
+    aj = sub.add_parser("add-job"); aj.add_argument("--url", required=True); aj.add_argument("--title", default=""); aj.add_argument("--company", default=""); aj.add_argument("--location", default=""); aj.add_argument("--description-file")
+    sub.add_parser("archive-skipped")
+    pf = sub.add_parser("portfolio"); pf.add_argument("--out", default="portfolio"); pf.add_argument("--no-pdf", action="store_true")
     sub.add_parser("validate-boards")
     l = sub.add_parser("list"); l.add_argument("status", nargs="?")
     pr = sub.add_parser("prepare"); pr.add_argument("job_id", nargs="?"); pr.add_argument("--next", type=int)
@@ -53,7 +61,17 @@ def main(argv=None):
     if a.cmd == "extract":
         print(extract.extract_text(a.path))
     elif a.cmd == "search":
-        _p(search.search(ws, limit=a.limit, analyze_only=a.analyze_only, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr)))
+        _p(search.search(ws, limit=a.limit, analyze_only=a.analyze_only, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr),
+                         exclude_ats=[x.strip() for x in a.exclude_ats.split(',') if x.strip()], preferred_location=a.preferred_location))
+    elif a.cmd == "alerts":
+        _p(alerts.read_alerts(ws, days=a.days, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr)))
+    elif a.cmd == "add-job":
+        desc = open(a.description_file, encoding="utf-8").read() if a.description_file else ""
+        _p(intake.add_job(ws, a.url, a.title, a.company, a.location, desc))
+    elif a.cmd == "portfolio":
+        _p(portfolio.build_portfolio(ws, a.out, resume_pdf=not a.no_pdf))
+    elif a.cmd == "archive-skipped":
+        _p({"moved": intake.archive_skipped(ws)})
     elif a.cmd == "validate-boards":
         _p(search.validate_boards(ws))
     elif a.cmd == "list":

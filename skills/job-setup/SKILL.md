@@ -50,7 +50,7 @@ has to be guessed or corrected later. Rules:
   legally authorized to work … for any employer?", a race dropdown with subgroups, a salary-bracket dropdown) and run
   `python server/tests/test_answers.py <workspace>` from the plugin folder if they share the same answers.
 Also ask (profile.json only): target roles (suggest 8–15 titles incl. adjacent ones) and seniority, preferred
-locations/remote, excluded employers (current employer!), applications per day, approve-first-N (default 10).
+locations/remote, excluded employers (current employer!), applications per day, approve-first-N (default 20).
 
 ## 5. Generate role-specific config
 - `config/search.json`: `title_include_regex` covering every target title family; `title_exclude_regex` (internships, unrelated functions, too-senior); `title_bonus_regex` for the best-fit titles; `seniority_penalty_regex`; `workday_queries` (4–8 short search phrases for their roles, e.g. "business analyst", "systems analyst"); `location.preferred` = [{"regex": "(denver|colorado|, co\\b)", "bonus": 20, "label": "Colorado"}]; `keyword_bonus` for their signature skill (e.g. {"regex":"\\bsalesforce\\b","title":8,"desc":4}). Keep the default country/exclude regexes unless they search outside the US (then rewrite them).

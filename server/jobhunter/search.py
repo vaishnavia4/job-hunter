@@ -1,6 +1,6 @@
 """Job search across public ATS job boards, scored by the workspace's config.
 
-Sources: Greenhouse, Lever, Ashby, SmartRecruiters, Workday (public CXS API), Remotive.
+Sources: Greenhouse, Lever, Ashby, SmartRecruiters, Workday (public CXS API), Amazon (amazon.jobs), Remotive.
 Nothing here is person-specific: titles, locations, skills, companies and blockers all come from the workspace.
 """
 import html
@@ -183,6 +183,37 @@ def workday_detail(job):
         pass
 
 
+def amazon_queries(cfg):
+    """Search terms for amazon.jobs, derived from the user's target titles (config/search.json)."""
+    qs = list(cfg.get("amazon_queries") or cfg.get("workday_queries") or [])
+    if not qs:  # last resort: words inside title_include_regex
+        qs = [w.strip() for w in re.split(r"[|()]", cfg.get("title_include_regex") or "") if re.fullmatch(r"[A-Za-z][A-Za-z /-]{2,40}", w.strip())]
+    return list(dict.fromkeys(q.strip() for q in qs if q.strip()))[:12]
+
+
+def fetch_amazon(loc, cfg):
+    """token = location query (e.g. 'remote', a state or a city). Uses the public amazon.jobs search.json API."""
+    seen = {}
+    for q in amazon_queries(cfg):
+        try:
+            data = get("https://www.amazon.jobs/en/search.json", params={
+                "base_query": q, "loc_query": loc, "country": "USA", "result_limit": 100, "offset": 0})
+        except Exception:
+            continue
+        for j in data.get("jobs", []):
+            seen.setdefault(j.get("id_icims") or j["id"], j)
+    for jid, j in seen.items():
+        try:
+            posted = datetime.strptime(j.get("posted_date", ""), "%B %d, %Y").replace(tzinfo=timezone.utc).isoformat()
+        except Exception:
+            posted = None
+        url = "https://www.amazon.jobs" + (j.get("job_path") or "")
+        desc = "\n\n".join(strip_html(j.get(k, "")) for k in ("description", "basic_qualifications", "preferred_qualifications"))
+        yield {"job_id": f"amz:{jid}", "ats": "amazon", "company": "Amazon", "title": j.get("title", ""),
+               "location": j.get("normalized_location") or j.get("location", ""), "url": url, "apply_url": url,
+               "posted": posted, "description": desc, "salary_text": ""}
+
+
 def fetch_remotive(category, cfg):
     data = get("https://remotive.com/api/remote-jobs", params={"category": category})
     for j in data.get("jobs", []):
@@ -193,7 +224,8 @@ def fetch_remotive(category, cfg):
 
 
 FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever, "ashby": fetch_ashby,
-            "smartrecruiters": fetch_smartrecruiters, "workday": fetch_workday, "remotive": fetch_remotive}
+            "smartrecruiters": fetch_smartrecruiters, "workday": fetch_workday, "amazon": fetch_amazon,
+            "remotive": fetch_remotive}
 DETAIL_FETCHERS = {"smartrecruiters": smartrecruiters_detail, "workday": workday_detail}
 
 
@@ -245,6 +277,10 @@ class Scorer:
         self.floor = (prof.get("job_preferences") or {}).get("salary_floor") or 0
         self.excluded = [e.lower() for e in (prof.get("job_preferences") or {}).get("excluded_companies", [])]
         self.max_age = c.get("max_age_days", 14)
+
+    def in_preferred_or_remote(self, location):
+        loc_l = (location or "").lower()
+        return any(r.search(loc_l) for r, _, _ in self.preferred) or bool(self.remote.search(loc_l))
 
     def title_ok(self, title):
         return bool(self.include.search(title)) and not self.exclude.search(title)
@@ -316,8 +352,9 @@ class Scorer:
 
 
 # ---------------------------------------------------------------- run
-def run_fetch(companies, cfg, workers=16):
-    tasks = [(ats, t) for ats, toks in companies.items() if ats in FETCHERS for t in toks]
+def run_fetch(companies, cfg, workers=16, exclude_ats=()):
+    skip = {a.lower() for a in exclude_ats}
+    tasks = [(ats, t) for ats, toks in companies.items() if ats in FETCHERS and ats not in skip for t in toks]
     jobs, status = [], {}
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futs = {ex.submit(lambda a, t: list(FETCHERS[a](t, cfg)), a, t): (a, t) for a, t in tasks}
@@ -339,11 +376,11 @@ def validate_boards(ws: Workspace):
     return {"valid": len(status) - len(bad), "invalid": bad}
 
 
-def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=print):
+def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=print, exclude_ats=(), preferred_location=False):
     cfg = ws.cfg("search", {})
     companies = {k: v for k, v in ws.cfg("companies", {}).items() if not k.startswith("_")}
     scorer = Scorer(ws)
-    raw, status = run_fetch(companies, cfg)
+    raw, status = run_fetch(companies, cfg, exclude_ats=exclude_ats)
     boards_ok = sum(1 for v in status.values() if not isinstance(v, str))
     log(f"Fetched {len(raw)} postings from {boards_ok} boards")
 
@@ -362,6 +399,8 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
             scored.append(res)
         else:
             rejects[why] = rejects.get(why, 0) + 1
+    if preferred_location:  # keep only the profile's preferred locations or remote (country already checked by score)
+        scored = [j for j in scored if scorer.in_preferred_or_remote(j.get("location") or "")]
     best = {}
     for j in scored:
         k = (j["company"].lower(), j["title"].lower())
@@ -370,7 +409,7 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
     scored = sorted(best.values(), key=lambda j: j["score"], reverse=True)
     fresh = [j for j in scored if j["job_id"] not in known_ids and (j["company"].lower(), j["title"].lower()) not in known_keys
              and j["score"] >= cfg.get("min_score", 50)]
-    n = limit or cfg.get("daily_shortlist", 20)
+    n = limit or (24 if preferred_location else cfg.get("daily_shortlist", 20))
     cap = cfg.get("max_per_company_per_day", 2)
     per_co, shortlist = {}, []
     for j in fresh:

@@ -108,7 +108,7 @@
     {
       "id": "city",
       "patterns": [],
-      "answer": "Denver",
+      "answer": "Austin",
       "source": "setup",
       "date": "2026-11-07",
       "note": ""
@@ -116,12 +116,12 @@
     {
       "id": "state",
       "patterns": [],
-      "answer": "Colorado",
+      "answer": "Texas",
       "source": "setup",
       "date": "2026-11-07",
       "note": "",
       "options_hint": [
-        "^colorado$"
+        "^texas$"
       ]
     },
     {
@@ -147,12 +147,12 @@
     {
       "id": "current_location",
       "patterns": [],
-      "answer": "Denver, Colorado",
+      "answer": "Austin, Texas",
       "source": "setup",
       "date": "2026-11-07",
       "note": "",
       "options_hint": [
-        "denver.{0,5}colorado"
+        "austin.{0,5}texas"
       ]
     },
     {
@@ -610,7 +610,7 @@
       "answer": "ASK_USER",
       "source": "setup",
       "date": "2026-11-07",
-      "note": "Salary-history questions are banned in Colorado; skip if optional, ask if required."
+      "note": "Salary-history questions are banned in several US states; skip if optional, ask if required."
     },
     {
       "id": "start_date",

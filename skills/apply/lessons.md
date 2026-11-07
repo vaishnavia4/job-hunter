@@ -35,3 +35,14 @@ Each line is a mistake that already happened once. Don't repeat it.
 - **Don't touch the page while the user reviews.** They may fix things or submit themselves. Read the page afterwards: if values changed, `record_answer(source="user_filled")`. If a success page shows, record the job as applied with `submitted_by=user` and count the approval.
 - **Never say "ready" before `verify_form` returns `pass: true`.**
 - **Closed postings happen.** If the page says applications closed, mark the job skipped with the reason.
+
+## 2026-11-07 (Reddit, Greenhouse)
+- Bank gaps found on a new form: veteran option "No military service", "select up to 2 ethnicities", demographic-data consent checkbox, "current (or most recent) company". When a new wording maps to an existing answer, record it immediately (source=setup) so the next form is automatic.
+- When reading dropdown options, SKIP phone-country and Country lists (200+ entries) — they waste tokens; just type "United States" and pick the visible match.
+- DONE (0.2.0): `verify_form` treats decline variants, yes/no prefixes ("No, I do not have..." = "No") and "<Company> careers website" as matches, and `record_answer` + `lookup_answer` match freshly recorded wordings punctuation-insensitively.
+- Workday sign-in "wrong email or password / locked" right after account creation = unverified account. Wait for the verification email; retrying locks the account.
+- Prefer "Sign in with Google" when offered and the user allows it. Site in maintenance: stop and retry later.
+
+## 2026-11-07 (Frontier, UKG/UltiPro)
+- UKG: sign-up = email+password -> name/phone -> straight into the form (no email verification). Resume upload auto-parses work history: ALWAYS re-check Address (parser put the headline in Address 1), current job's end date (parser filled today's month/year), locations, Major, and auto-assigned skill levels (lower secondary skills).
+- UKG duplicates element ids (hidden copies): target visible elements only. Date pickers are 3 boxes (mm/dd/yyyy). Document rows each have a type dropdown — set the type on the row matching the FILE NAME, not by index.

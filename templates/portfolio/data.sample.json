@@ -1,0 +1,11 @@
+{
+  "name": "Jane Doe",
+  "headline": "Data Analyst",
+  "summary": "Analyst who turns messy data into decisions.",
+  "contact": {"location": "Austin, TX", "email": "jane@example.com", "linkedin": "https://linkedin.com/in/janedoe", "website": "", "github": "https://github.com/janedoe"},
+  "skills": {"Analytics": ["SQL", "Python"]},
+  "experience": [{"company": "Example Corp", "title": "Analyst", "location": "Remote", "dates": "2021 - Present", "bullets": ["Built a reporting model that cut month-end close by 2 days."]}],
+  "projects": [{"name": "Example project", "description": "What it does and what you built.", "url": ""}],
+  "certifications": [],
+  "education": [{"degree": "BS Statistics", "school": "Example University"}]
+}

@@ -28,6 +28,42 @@ def norm(s):
     return s.rstrip("*").strip()
 
 
+def pnorm(s):
+    """Punctuation-insensitive normal form: lowercase words only, single spaces."""
+    return re.sub(r"[^a-z0-9]+", " ", norm(s)).strip()
+
+
+CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?careers? (?:website|site|page)$")
+
+
+def _canon(s):
+    """Canonical form used to compare a stored answer with what is on the page."""
+    n = norm(s)
+    if CAREERS_RX.match(n):
+        return "company careers website"
+    return n
+
+
+def equivalent(found, expected):
+    """True when the page value and the expected answer mean the same thing (verify_form)."""
+    nv, ne = norm(found), norm(expected)
+    if not nv or not ne:
+        return False
+    if nv == ne or _canon(nv) == _canon(ne):
+        return True
+    # decline variants: "I don't wish to answer" = "Decline to self-identify" = "Prefer not to say"
+    if DECLINE_RX.search(nv) and DECLINE_RX.search(ne):
+        return True
+    # yes/no prefixes: "No, I do not have a disability..." = "No"
+    for a, b in ((nv, ne), (ne, nv)):
+        if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
+            return True
+    if len(ne) > 3 and (ne in nv or nv in ne):
+        return True
+    dv, de = re.sub(r"\D", "", nv), re.sub(r"\D", "", ne)
+    return len(dv) >= 7 and dv[-10:] == de[-10:]
+
+
 def _bank():
     return load_json(TEMPLATES / "question_bank.json", {"questions": []})
 
@@ -52,12 +88,13 @@ def _dig(d, path):
 
 
 def _match_any(patterns, text):
+    alt = pnorm(text)
     for p in patterns or []:
         try:
-            if re.search(p, text, re.I):
+            if re.search(p, text, re.I) or re.search(p, alt, re.I):
                 return p
         except re.error:
-            if p.lower() in text:
+            if p.lower() in text or p.lower() in alt:
                 return p
     return None
 
@@ -244,7 +281,7 @@ def _with_option(res, options, hints, strategy):
 
 # ---------------------------------------------------------------- record
 def auto_pattern(question_text):
-    words = [w for w in re.findall(r"[a-z0-9][a-z0-9'+#.-]*", norm(question_text)) if w not in STOP and len(w) > 2]
+    words = [w for w in pnorm(question_text).split() if w not in STOP and len(w) > 2]
     words = words[:6] or [re.escape(norm(question_text))]
     return "".join(rf"(?=.*\b{re.escape(w)})" for w in words)
 
@@ -318,8 +355,7 @@ def verify_form(ws, fields):
         ne = norm(str(expected))
         if not nv:
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "problem": "empty"})
-        elif nv == ne or (len(ne) > 3 and (ne in nv or nv in ne)) or (
-                len(re.sub(r"\D", "", nv)) >= 7 and re.sub(r"\D", "", nv)[-10:] == re.sub(r"\D", "", ne)[-10:]):
+        elif equivalent(value, expected):
             out["ok"].append(label)
         else:
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "source": r["source"]})

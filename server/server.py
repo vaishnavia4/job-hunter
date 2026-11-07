@@ -14,7 +14,7 @@ try:  # mcp SDK 2.x
 except ImportError:  # mcp SDK 1.x
     from mcp.server.fastmcp import FastMCP as _Server  # noqa: E402
 
-from jobhunter import answers, applications, extract, resume, search, skills_gap  # noqa: E402
+from jobhunter import alerts, answers, applications, extract, intake, portfolio, resume, search, skills_gap  # noqa: E402
 from jobhunter.workspace import Workspace, init_workspace as _init  # noqa: E402
 
 mcp = _Server("jobs")
@@ -53,13 +53,50 @@ def extract_resume_text(path: str) -> str:
 
 
 @mcp.tool()
-def search_jobs(workspace: str = "", limit: int = 0, analyze_only: bool = False, dry_run: bool = False) -> str:
+def search_jobs(workspace: str = "", limit: int = 0, analyze_only: bool = False, dry_run: bool = False,
+                exclude_ats: list[str] | None = None, preferred_location: bool = False) -> str:
     """Search all configured job boards, score jobs against the workspace config, add the top new ones to the tracker
     (status=new) and refresh the skills-gap report. analyze_only refreshes market data without adding jobs;
     dry_run touches nothing. Takes 1-3 minutes."""
     with _quiet():
-        res = search.search(_ws(workspace), limit=limit or None, analyze_only=analyze_only, dry_run=dry_run)
+        res = search.search(_ws(workspace), limit=limit or None, analyze_only=analyze_only, dry_run=dry_run,
+                            exclude_ats=exclude_ats or (), preferred_location=preferred_location)
     return _j(res)
+
+
+@mcp.tool()
+def read_job_alerts(workspace: str = "", days: int = 0, dry_run: bool = False) -> str:
+    """Read LinkedIn/Jobright job-alert emails from Gmail (IMAP, App Password from profile/credentials.json "gmail"),
+    parse each LinkedIn job from its public guest page, score it like search_jobs and add matches to the tracker
+    (status=new). days = look-back window (default: since last run, first run 3 days); dry_run touches nothing."""
+    with _quiet():
+        return _j(alerts.read_alerts(_ws(workspace), days=days or None, dry_run=dry_run, log=lambda m: None))
+
+
+@mcp.tool()
+def add_job(workspace: str = "", url: str = "", title: str = "", company: str = "", location: str = "",
+            description: str = "") -> str:
+    """Manual intake: add a job from a pasted link. Fetches the posting when title/company/description are missing,
+    saves jobs/jd/<id>.json and a tracker row (status new, scored when possible). LinkedIn/Indeed links are
+    discovery only: find the posting on the company's own site to apply."""
+    with _quiet():
+        return _j(intake.add_job(_ws(workspace), url, title, company, location, description))
+
+
+@mcp.tool()
+def build_portfolio(workspace: str = "", out_dir: str = "portfolio", resume_pdf: bool = True) -> str:
+    """Build public portfolio files from master_resume.json into out_dir: static site (index.html, style.css, site.js,
+    data.json, Pages workflow), PUBLIC resume.pdf (no phone, street address or visa status), PROFILE_README.md.
+    No em/en dashes in generated text. Review for internal numbers and coworker names before publishing."""
+    with _quiet():
+        return _j(portfolio.build_portfolio(_ws(workspace), out_dir, resume_pdf=resume_pdf))
+
+
+@mcp.tool()
+def archive_skipped(workspace: str = "") -> str:
+    """Move application folders of skipped jobs to applications/_skipped and update the tracker."""
+    with _quiet():
+        return _j({"moved": intake.archive_skipped(_ws(workspace))})
 
 
 @mcp.tool()
@@ -124,7 +161,7 @@ def stats(workspace: str = "") -> str:
     ws = _ws(workspace)
     pol = (ws.profile() or {}).get("submit_policy", {})
     return _j({"workspace": str(ws.root), "initialized": ws.is_initialized(), "counts": ws.stats(),
-               "approvals": f"{pol.get('approved_so_far', 0)}/{pol.get('approve_first_n', 10)}"})
+               "approvals": f"{pol.get('approved_so_far', 0)}/{pol.get('approve_first_n', 20)}"})
 
 
 @mcp.tool()

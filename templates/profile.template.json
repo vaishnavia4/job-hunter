@@ -53,7 +53,7 @@
   },
   "submit_policy": {
     "mode": "approve_first_n",
-    "approve_first_n": 10,
+    "approve_first_n": 20,
     "approved_so_far": 0,
     "linkedin_easy_apply": "discovery_only",
     "legal_attestations": "user_clicks"

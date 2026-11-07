@@ -24,6 +24,7 @@ Needs the Playwright MCP browser tools. Read `profile/profile.json` (`submit_pol
    re-run until `pass: true`. Only then screenshot and say "ready to submit".
 
 ## Universal rules
+- **Skip option dumps for phone-country and Country lists** (200+ entries). Type the country (the one in `profile.json`) and click the visible match; don't read all options.
 - **Upload the resume FIRST**, then fill fields (some ATSs autofill from the file and overwrite answers).
 - **Verify the PDF is the current build** (headline = single title) before uploading. If you rebuild after uploading, replace the file.
 - Fill from `profile.json` only. Free-text questions: short, specific, truthful answers built from `master_resume.json`; save them in `notes.md`. Don't overstate (e.g. "most of the team left" when the master says "a team transition").
@@ -63,7 +64,9 @@ Single page: resume upload first (it may prefill name/email), "Additional inform
 - Work experience: click "Add Another" per job, fill Job Title/Company/Location/Role Description, tick "I currently work here" for the current job, dates are spinbuttons — type `MMYYYY` slowly into the Month box (it auto-advances).
 - Education: School (text), Degree (dropdown), Field of Study (search prompt — type, Enter, pick the closest option).
 - Skills: type each skill, Enter, click the matching prompt option.
-- The page may say "Workday is currently unavailable" (weekend maintenance) → retry later.
+- The page may say "Workday is currently unavailable" (weekend maintenance): stop, mark the job `blocked` with the reason, and retry later. Don't loop.
+- **Prefer "Sign in with Google"** when the site offers it and the user allows it (it skips account creation and the verification email). The user enters their own Google password; never type it.
+- After creating an account, sign-in may say "wrong email or password" or "account locked". **Do not retry.** The account is usually unverified: wait for the verification email (ask the user to open it, or open Gmail as in the step above), verify, then sign in once. Repeated attempts lock the account.
 - Candidate Home shows status after submission ("Review", "Date Submitted").
 
 ## SmartRecruiters / company sites

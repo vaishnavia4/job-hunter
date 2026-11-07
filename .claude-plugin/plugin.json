@@ -1,6 +1,6 @@
 {
   "name": "job-hunter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Upload your resume and let Claude search job boards daily, tailor a truthful resume and cover letter per job, fill applications (Greenhouse, Lever, Ashby, Workday) with your approval, track everything, and show which skills the market wants. Works for any role.",
   "author": {
     "name": "Vaishnavi Akki"
