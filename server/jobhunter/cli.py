@@ -68,7 +68,7 @@ def main(argv=None):
     sub.add_parser("selfcheck")
     cl = sub.add_parser("cleanup"); cl.add_argument("--dry-run", action="store_true")
     sub.add_parser("export")
-    mv = sub.add_parser("mail-verify"); mv.add_argument("--host", default=""); mv.add_argument("--sender", default=""); mv.add_argument("--minutes", type=int, default=15); mv.add_argument("--wait", type=int, default=0)
+    mv = sub.add_parser("mail-verify"); mv.add_argument("--host", default=""); mv.add_argument("--sender", default=""); mv.add_argument("--minutes", type=int, default=15); mv.add_argument("--wait", type=int, default=0); mv.add_argument("--save", default="", help="write the link/code to this file and print only a redacted summary (links are secrets)")
     hi = sub.add_parser("h1b-import"); hi.add_argument("--years", default="2022,2023")
     hl = sub.add_parser("h1b"); hl.add_argument("company")
     rs = sub.add_parser("responses"); rs.add_argument("--days", type=int, default=14); rs.add_argument("--dry-run", action="store_true")
@@ -151,7 +151,12 @@ def main(argv=None):
         _p(h1b.lookup(ws, a.company) or {"company": a.company, "h1b": "no record"})
     elif a.cmd == "mail-verify":
         from . import mail_verify
-        _p(mail_verify.find_verification(ws, a.minutes, a.host, a.sender, a.wait) or {"found": False})
+        r = mail_verify.find_verification(ws, a.minutes, a.host, a.sender, a.wait) or {"found": False}
+        if a.save and r.get("value"):
+            Path(a.save).write_text(r["value"], encoding="utf-8")
+            kind = "reset" if "passwordreset" in r["value"] else ("activation" if r.get("type") == "link" else r.get("type"))
+            r = {**{k: v for k, v in r.items() if k != "value"}, "saved_to": a.save, "kind": kind}
+        _p(r)
     elif a.cmd == "export":
         _p({"xlsx": ws.export_xlsx()})
     elif a.cmd == "final-check":

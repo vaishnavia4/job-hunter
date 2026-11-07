@@ -80,7 +80,7 @@ The token-free filler encodes all of this: `python -m jobhunter.fill --workspace
      (I agree) is shown, **stop and report `needs_user_checkbox`**: consent belongs to the user.
      Submit with `createAccountSubmitButton`.
   3. Read the activation email over IMAP (`jobhunter.mail_verify.find_verification(ws, host_hint="<tenant>.wdN")`,
-     CLI `python -m jobhunter mail-verify --host <tenant>.wdN --wait 180`). The link contains `/activate/`; only open it
+     CLI `python -m jobhunter mail-verify --host <tenant>.wdN --wait 180 --save <file>`; without --save the link is printed). The link contains `/activate/`; only open it
      if it is https on the same tenant. Never print or log the link. Then sign in again (the one allowed retry).
   4. "Already exists", or no activation email within ~3 minutes and the page is back at Sign In (= existing account) ->
      **Forgot your password?** -> submit the email -> reset email (link contains `/passwordreset/`) -> set the configured
