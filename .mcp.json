@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "jobs": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/server.py"],
+      "env": {
+        "JOB_HUNTER_WORKSPACE": "${CLAUDE_PROJECT_DIR}",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

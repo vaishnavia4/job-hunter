@@ -1,0 +1,70 @@
+---
+name: apply
+description: Fill and submit a job application in the browser (Playwright MCP) for a tailored job-hunter application - playbooks for Greenhouse, Lever, Ashby and Workday (account creation, email verification, dropdowns, dates, skills), work-authorization wording rules, approval mode (user clicks Submit for the first N), screenshots and tracker updates. Use when asked to apply to a job or during job-batch's apply step.
+argument-hint: [application-folder-or-job-id]
+---
+
+# Apply to a job
+
+Needs the Playwright MCP browser tools. Read `profile/profile.json` (`submit_policy`), the folder's `notes.md`, `decision.json`, the built resume/cover-letter PDFs, and **`lessons.md` in this skill folder** (mistakes already made once — don't repeat them).
+
+## The answer loop (mandatory — this is what makes it rigid)
+1. **Every question → `lookup_answer(question_text, options)`** with the exact label and the *visible* option texts.
+   - `ok` → fill `option` (dropdown/radio) or `answer` (text). Never improvise a different answer.
+   - `ASK_USER` / `AMBIGUOUS_OPTIONS` → ask the user (batch all unknowns of the form in one message), fill it, then
+     `record_answer(question_text, answer, source="user_correction", options_hint=[most specific regex first])`.
+   - `USER_MUST_TICK` → leave it; list it in the "ready" message for the user to tick.
+   - `GENERATE_ESSAY` → write a short truthful answer from `master_resume.json` + the JD; save it in `notes.md`.
+2. **User fixes are training data.** Whenever the user says an answer is wrong, or you notice on the page that they
+   changed/filled a field themselves (read back values before and after their review), immediately call
+   `record_answer(..., source="user_correction" | "user_filled")`. Next time `lookup_answer` returns their answer.
+3. **Before saying "ready"**: read back EVERY field from the page — label, current value/selected option, the visible
+   options, required flag, and for uploads `kind:"file"` + the file name in each box — and call `verify_form(fields)`.
+   Fix every `mismatches` / `missing_required` / `file_problems`, confirm `unknown` with the user (then record), and
+   re-run until `pass: true`. Only then screenshot and say "ready to submit".
+
+## Universal rules
+- **Upload the resume FIRST**, then fill fields (some ATSs autofill from the file and overwrite answers).
+- **Verify the PDF is the current build** (headline = single title) before uploading. If you rebuild after uploading, replace the file.
+- Fill from `profile.json` only. Free-text questions: short, specific, truthful answers built from `master_resume.json`; save them in `notes.md`. Don't overstate (e.g. "most of the team left" when the master says "a team transition").
+- **Work authorization**: follow `answer_rules` literally for each wording ("legally authorized", "for any employer", "unrestricted", "without sponsorship", "require sponsorship now or in the future"). If a new wording appears, stop and ask.
+- **Legal attestations** (arbitration agreements, "I certify…", conflict-of-interest, non-compete, relatives at company): use only answers the user already gave; otherwise ask. Leave arbitration/legal-agreement checkboxes for the user to tick.
+- EEO: use `eeo_voluntary`; pick the option that matches, else "Decline". When a dropdown offers **subgroups** (e.g. "Asian: East Asian / South Asian / Southeast Asian"), match `race_detail` precisely — never take the first option that merely contains the word. Pronoun fields: use `eeo_voluntary.pronouns`.
+- **Required-field check before "ready"**: every field marked `*` / `aria-required` must have a value (GitHub/portfolio links included when required). Read back the selected values and compare to the profile.
+- Dropdown option pickers: only consider **visible** options (`[role=option]:visible`) — hidden lists (e.g. phone country-code pickers) otherwise get matched.
+- Salary: `desired_salary_answer`; for range dropdowns pick the bracket that contains/starts at it.
+- Location/relocation: from `job_preferences`.
+- Preferred name fields: fill them.
+- Never apply through LinkedIn/Indeed Easy Apply. CAPTCHA / SMS / personal-account passwords → status `blocked`, tell the user.
+- **Approval mode**: while `approved_so_far < approve_first_n` → fill everything, full-page screenshot to the folder (`review_before_submit.png`), `update_status(status="ready")`, then tell the user **"ready to submit"** with a table of the answers. Don't touch the page while they review. After they confirm it's submitted (check the confirmation page), screenshot it, `update_status(status="applied", submitted_by="user")`, increment `approved_so_far` in profile.json. After N approvals, click Submit yourself and record `submitted_by="claude"`.
+- Always record answers in `notes.md` and add a dated line to the status log.
+
+## Greenhouse (job-boards.greenhouse.io / boards.greenhouse.io)
+Single page. **Separate "Resume/CV" and "Cover Letter" file inputs — upload by LABEL** (find the input inside the field whose label says Resume/CV for the resume, Cover Letter for the cover-letter PDF); never use "the first `input[type=file]`". Then verify each box shows the right file name. Text fields, custom questions as selects/radios, EEO block at the bottom. Some have reCAPTCHA on submit. Location may be an autocomplete — type, wait, pick the matching option. Fill School/Degree even when optional if the answer bank says so.
+New UI (job-boards.greenhouse.io): almost every question is a react-select combobox (`input` with a label `for=`): click it, optionally type, then click a **visible** `[role=option]`. Option texts are long ("I have not worked at <Company>", "United States +1") — match by meaning, not just "No"/"Yes". Sponsorship is often split into "now" and "in the future"; an H-1B transfer needs sponsorship **now** too.
+
+## Lever (jobs.lever.co/<co>/<id>/apply)
+Single page: resume upload first (it may prefill name/email), "Additional information" textarea is a good place for a 2–3 sentence pitch, custom questions, EEO block. hCaptcha may appear on submit → user.
+
+## Ashby (jobs.ashbyhq.com/<co>/<id>/application)
+- There may be TWO file inputs: an "Autofill from resume" one and the real **Resume** field — use the one whose field label is "Resume".
+- Yes/No questions are **buttons** inside the field (hidden checkbox) — click the "Yes"/"No" button in that field's container.
+- Location is a combobox (`input.ashby-application-form-input-autocomplete`): type slowly, wait ~2 s, click the first `[role=option]`.
+- Radios: `getByLabel(exact option text).check()`.
+- After a file is uploaded the input disappears; replace via the field's "Replace" button.
+- Success page shows "Your application was successfully submitted" / "Success".
+
+## Workday (<tenant>.wdN.myworkdayjobs.com)
+- Use **Apply Manually** (not "Autofill with Resume").
+- Many tenants require an account: use `profile/credentials.json` (create it with the user's approval; never echo the password). The site sends a **verification email**: open Gmail in the browser (the user signs in to Google themselves; Google blocks automated sign-in with reCAPTCHA), open "Verify your candidate account", confirm the link is on the same `myworkdayjobs.com` tenant, open it, then sign in. The Sign In button is covered by a `[data-automation-id=click_filter][aria-label="Sign In"]` layer — click that.
+- Steps: My Information → My Experience → Application Questions (1–2 pages) → Voluntary Disclosures → (Self Identify) → Review.
+- Dropdowns are `button[aria-haspopup]`: click, wait ~700 ms, click the `[role=option]` with the exact text. Map each question by the text of its container.
+- "How did you hear" is a multi-level prompt (`[data-automation-id=promptOption]`): e.g. Website → "<Company> Careers Website".
+- Work experience: click "Add Another" per job, fill Job Title/Company/Location/Role Description, tick "I currently work here" for the current job, dates are spinbuttons — type `MMYYYY` slowly into the Month box (it auto-advances).
+- Education: School (text), Degree (dropdown), Field of Study (search prompt — type, Enter, pick the closest option).
+- Skills: type each skill, Enter, click the matching prompt option.
+- The page may say "Workday is currently unavailable" (weekend maintenance) → retry later.
+- Candidate Home shows status after submission ("Review", "Date Submitted").
+
+## SmartRecruiters / company sites
+Same universal rules; snapshot the form, map fields by label, screenshot before submit.

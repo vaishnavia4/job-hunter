@@ -1,0 +1,61 @@
+{
+  "_note": "Applicant answers used to fill every application. Filled by job-setup. Only the user decides legal/EEO answers.",
+  "personal": {
+    "first_name": "", "last_name": "", "full_name": "", "preferred_first_name": "", "preferred_last_name": "",
+    "email": "", "phone": "", "phone_digits": "",
+    "address_line1": "", "city": "", "state": "", "state_code": "", "zip": "", "country": "United States",
+    "linkedin": "", "github": "", "website": "", "languages": []
+  },
+  "work_authorization": {
+    "authorized_to_work_in_us": "",
+    "requires_sponsorship_now_or_future": "",
+    "visa_status": "",
+    "us_citizen": "",
+    "security_clearance": "None",
+    "answer_rules": "How to answer each wording, in the user's own words. e.g. 'legally authorized' -> Yes; 'authorized for any employer' -> Yes/No; 'unrestricted authorization' -> Yes/No; 'require sponsorship now or in future' -> Yes/No."
+  },
+  "job_preferences": {
+    "target_titles": [],
+    "locations_preferred": [],
+    "open_to_relocation": "",
+    "work_mode": "Remote, hybrid, or on-site",
+    "current_salary": null,
+    "salary_floor": 0,
+    "desired_salary_answer": "",
+    "desired_salary_rule": "Text field: the number; range dropdowns: the bracket that contains/starts at this number.",
+    "start_date": "2 weeks after offer",
+    "notice_period": "2 weeks",
+    "excluded_companies": [],
+    "applications_per_day": 20
+  },
+  "experience": { "years_total": null, "current_employer": "", "current_title": "", "skill_years": {} },
+  "education": { "degree": "", "field": "", "school": "", "location": "", "graduation_year": "", "graduation_year_policy": "Only fill when the form requires it." },
+  "certifications": [],
+  "eeo_voluntary": {
+    "gender": "Decline to self-identify",
+    "hispanic_or_latino": "Decline to self-identify",
+    "race": "Decline to self-identify",
+    "veteran_status": "Decline to self-identify",
+    "disability_status": "Decline to self-identify",
+    "everything_else": "Decline to self-identify"
+  },
+  "standard_answers": {
+    "how_did_you_hear": "Company careers page",
+    "willing_to_relocate": "",
+    "willing_to_travel": "",
+    "over_18": "Yes",
+    "background_check_ok": "Yes",
+    "previously_worked_here": "No",
+    "non_compete": "",
+    "relatives_at_company": "",
+    "sms_consent": "No",
+    "conflict_of_interest_default": "Ask the user the first time a conflict-of-interest question appears; record the answer here."
+  },
+  "submit_policy": {
+    "mode": "approve_first_n",
+    "approve_first_n": 10,
+    "approved_so_far": 0,
+    "linkedin_easy_apply": "discovery_only",
+    "legal_attestations": "user_clicks"
+  }
+}

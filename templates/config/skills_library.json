@@ -1,0 +1,833 @@
+{
+  "_note": "Skill vocabulary library by field. job-setup copies the relevant categories into config/skills.json and sets 'have' from the resume: true (core), \"secondary\" (light), false (gap). Add role-specific skills as needed.",
+  "categories": {
+    "cloud_devops_sre": {
+      "Azure": {
+        "regex": "\\bazure\\b",
+        "have": false
+      },
+      "AWS": {
+        "regex": "\\baws\\b|amazon web services",
+        "have": false
+      },
+      "GCP": {
+        "regex": "\\bgcp\\b|google cloud",
+        "have": false
+      },
+      "Terraform": {
+        "regex": "terraform",
+        "have": false
+      },
+      "Bicep": {
+        "regex": "\\bbicep\\b",
+        "have": false
+      },
+      "ARM templates": {
+        "regex": "\\barm templates?\\b",
+        "have": false
+      },
+      "Ansible": {
+        "regex": "ansible",
+        "have": false
+      },
+      "Kubernetes": {
+        "regex": "kubernetes|\\bk8s\\b",
+        "have": false
+      },
+      "Docker": {
+        "regex": "docker|container",
+        "have": false
+      },
+      "AKS": {
+        "regex": "\\baks\\b",
+        "have": false
+      },
+      "EKS": {
+        "regex": "\\beks\\b",
+        "have": false
+      },
+      "ECS": {
+        "regex": "\\becs\\b",
+        "have": false
+      },
+      "GKE": {
+        "regex": "\\bgke\\b",
+        "have": false
+      },
+      "Helm": {
+        "regex": "\\bhelm\\b",
+        "have": false
+      },
+      "Argo CD": {
+        "regex": "argo ?cd|\\bargo\\b",
+        "have": false
+      },
+      "GitOps": {
+        "regex": "gitops",
+        "have": false
+      },
+      "Flux": {
+        "regex": "\\bflux ?cd\\b",
+        "have": false
+      },
+      "Azure DevOps": {
+        "regex": "azure devops|\\bado\\b",
+        "have": false
+      },
+      "Jenkins": {
+        "regex": "jenkins",
+        "have": false
+      },
+      "GitHub Actions": {
+        "regex": "github actions",
+        "have": false
+      },
+      "GitLab CI": {
+        "regex": "gitlab",
+        "have": false
+      },
+      "CircleCI": {
+        "regex": "circleci",
+        "have": false
+      },
+      "CI/CD": {
+        "regex": "ci/cd|continuous (integration|delivery|deployment)",
+        "have": false
+      },
+      "Python": {
+        "regex": "\\bpython\\b",
+        "have": false
+      },
+      "PowerShell": {
+        "regex": "powershell",
+        "have": false
+      },
+      "Bash": {
+        "regex": "\\bbash\\b|shell script",
+        "have": false
+      },
+      "C#/.NET": {
+        "regex": "\\bc#|\\.net\\b",
+        "have": false
+      },
+      "Go": {
+        "regex": "golang|(?-i:\\bGo\\b)(?=\\s*[,/)])|(?-i:\\bGo\\b)(?=\\s+(?:and|or)\\s+(?-i:[A-Z]))|(?:python|java|rust|c\\+\\+|ruby|kotlin|typescript),?\\s+(?:or\\s+|and\\s+|/\\s*)?(?-i:Go\\b)",
+        "have": false
+      },
+      "Java": {
+        "regex": "\\bjava\\b",
+        "have": false
+      },
+      "TypeScript": {
+        "regex": "typescript",
+        "have": false
+      },
+      "Rust": {
+        "regex": "\\brust\\b",
+        "have": false
+      },
+      "Ruby": {
+        "regex": "\\bruby\\b",
+        "have": false
+      },
+      "Linux": {
+        "regex": "linux|unix",
+        "have": false
+      },
+      "Networking": {
+        "regex": "networking|vnet|\\bvpc\\b|subnet|dns|tcp/ip|load balanc",
+        "have": false
+      },
+      "Security": {
+        "regex": "security|iam\\b|rbac|least privilege|zero trust",
+        "have": false
+      },
+      "Key Vault/Vault": {
+        "regex": "key ?vault|hashicorp vault|\\bvault\\b",
+        "have": false
+      },
+      "Entra ID/AAD": {
+        "regex": "entra|azure ad|active directory",
+        "have": false
+      },
+      "Azure Policy": {
+        "regex": "azure policy|policy as code",
+        "have": false
+      },
+      "Compliance": {
+        "regex": "iso ?27001|soc ?2|pci|hipaa|fedramp|nist",
+        "have": false
+      },
+      "DevSecOps": {
+        "regex": "devsecops|snyk|sonarqube|sast|dast",
+        "have": false
+      },
+      "Prometheus": {
+        "regex": "prometheus",
+        "have": false
+      },
+      "Grafana": {
+        "regex": "grafana",
+        "have": false
+      },
+      "Datadog": {
+        "regex": "datadog",
+        "have": false
+      },
+      "Splunk": {
+        "regex": "splunk",
+        "have": false
+      },
+      "New Relic": {
+        "regex": "new ?relic",
+        "have": false
+      },
+      "ELK": {
+        "regex": "\\belk\\b|elasticsearch|kibana",
+        "have": false
+      },
+      "OpenTelemetry": {
+        "regex": "opentelemetry|otel",
+        "have": false
+      },
+      "Azure Monitor/App Insights": {
+        "regex": "azure monitor|application insights|log analytics",
+        "have": false
+      },
+      "CloudWatch": {
+        "regex": "cloudwatch",
+        "have": false
+      },
+      "PagerDuty": {
+        "regex": "pagerduty",
+        "have": false
+      },
+      "Observability": {
+        "regex": "observability|monitoring|alerting",
+        "have": false
+      },
+      "SRE/SLOs": {
+        "regex": "\\bslo|\\bsli\\b|error budget|site reliability",
+        "have": false
+      },
+      "Incident response": {
+        "regex": "incident|on-?call|postmortem",
+        "have": false
+      },
+      "App Service/Functions": {
+        "regex": "app service|function apps?|azure functions",
+        "have": false
+      },
+      "Logic Apps": {
+        "regex": "logic apps?",
+        "have": false
+      },
+      "Service Bus": {
+        "regex": "service bus",
+        "have": false
+      },
+      "Cosmos DB": {
+        "regex": "cosmos",
+        "have": false
+      },
+      "Serverless": {
+        "regex": "serverless|lambda",
+        "have": false
+      },
+      "SQL": {
+        "regex": "\\bsql\\b|postgres|mysql",
+        "have": false
+      },
+      "Redis": {
+        "regex": "redis",
+        "have": false
+      },
+      "Kafka": {
+        "regex": "kafka",
+        "have": false
+      },
+      "Cost optimization/FinOps": {
+        "regex": "cost optimi|finops|cloud cost",
+        "have": false
+      },
+      "Disaster recovery": {
+        "regex": "disaster recovery|\\bdr\\b|backup",
+        "have": false
+      },
+      "Migration": {
+        "regex": "migrat",
+        "have": false
+      },
+      "Multi-tenant/SaaS": {
+        "regex": "multi-?tenant|saas",
+        "have": false
+      },
+      "Power Platform": {
+        "regex": "power platform|power automate|dataverse",
+        "have": false
+      },
+      "Packer": {
+        "regex": "\\bpacker\\b",
+        "have": false
+      },
+      "Pulumi": {
+        "regex": "pulumi",
+        "have": false
+      },
+      "CloudFormation": {
+        "regex": "cloudformation",
+        "have": false
+      },
+      "Crossplane": {
+        "regex": "crossplane",
+        "have": false
+      },
+      "Istio/Service mesh": {
+        "regex": "istio|service mesh|linkerd",
+        "have": false
+      },
+      "Chef/Puppet": {
+        "regex": "\\bchef\\b|puppet|saltstack",
+        "have": false
+      },
+      "Artifactory/Nexus": {
+        "regex": "artifactory|nexus|jfrog",
+        "have": false
+      },
+      "Nginx": {
+        "regex": "nginx",
+        "have": false
+      },
+      "MLOps": {
+        "regex": "mlops|ml ops|model deployment|model serving",
+        "have": false
+      },
+      "ML platforms": {
+        "regex": "kubeflow|mlflow|sagemaker|azure ml|vertex ai|databricks",
+        "have": false
+      },
+      "LLM/GenAI": {
+        "regex": "\\bllms?\\b|generative ai|genai|large language",
+        "have": false
+      },
+      "AI agents/MCP": {
+        "regex": "\\bagents?\\b|\\bmcp\\b|model context protocol|copilot|claude",
+        "have": false
+      },
+      "GPU": {
+        "regex": "\\bgpus?\\b|cuda",
+        "have": false
+      },
+      "Spark": {
+        "regex": "\\bspark\\b",
+        "have": false
+      },
+      "Playwright/testing": {
+        "regex": "playwright|test automation",
+        "have": false
+      },
+      "Okta": {
+        "regex": "\\bokta\\b",
+        "have": false
+      },
+      "SAML/OIDC/OAuth": {
+        "regex": "\\bsaml\\b|\\boidc\\b|openid connect|\\boauth",
+        "have": false
+      },
+      "Conditional Access/Zero Trust": {
+        "regex": "conditional access|zero trust|ztna",
+        "have": false
+      },
+      "OPA/Rego/Policy engines": {
+        "regex": "\\bopa\\b|open policy agent|\\brego\\b|kyverno|gatekeeper",
+        "have": false
+      },
+      "Palo Alto/Fortinet firewalls": {
+        "regex": "palo alto|panorama|fortigate|fortinet",
+        "have": false
+      },
+      "Zscaler/Cloudflare": {
+        "regex": "zscaler|cloudflare",
+        "have": false
+      },
+      "BGP/routing protocols": {
+        "regex": "\\bbgp\\b|\\bospf\\b|evpn|vxlan|mpls",
+        "have": false
+      },
+      "SIEM/Sentinel": {
+        "regex": "\\bsiem\\b|sentinel|chronicle|soar",
+        "have": false
+      },
+      "CSPM/CNAPP (Wiz, Prisma)": {
+        "regex": "\\bcspm\\b|\\bcnapp\\b|\\bwiz\\b|prisma cloud|orca security",
+        "have": false
+      },
+      "Python software engineering": {
+        "regex": "software engineering in python|python (development|developer)|production python",
+        "have": false
+      },
+      "Linux internals/performance": {
+        "regex": "linux (internals|kernel|performance)|systemd|ebpf",
+        "have": false
+      },
+      "CKA/CKAD cert": {
+        "regex": "\\bcka\\b|\\bckad\\b|certified kubernetes",
+        "have": false
+      },
+      "AWS DevOps/SA Pro cert": {
+        "regex": "devops engineer.{0,5}professional|solutions architect.{0,5}professional",
+        "have": false
+      },
+      "Terraform Cloud/Enterprise": {
+        "regex": "terraform (cloud|enterprise)|\\bhcp terraform",
+        "have": false
+      },
+      "Backstage/IDP": {
+        "regex": "backstage|internal developer platform|\\bidp\\b",
+        "have": false
+      },
+      "Chaos engineering": {
+        "regex": "chaos (engineering|monkey|mesh)|gremlin|litmus",
+        "have": false
+      },
+      "Capacity planning": {
+        "regex": "capacity planning",
+        "have": false
+      },
+      "Windows Server/AD": {
+        "regex": "windows server|active directory|group policy|\\bgpo\\b",
+        "have": false
+      },
+      "Intune/Endpoint": {
+        "regex": "\\bintune\\b|\\bjamf\\b|endpoint management",
+        "have": false
+      }
+    },
+    "business_analysis": {
+      "Requirements gathering": {
+        "regex": "requirements (gathering|elicitation|analysis)|elicit",
+        "have": false
+      },
+      "BRD/FRD/specs": {
+        "regex": "\\bbrds?\\b|\\bfrds?\\b|business requirements document|functional (spec|requirements)",
+        "have": false
+      },
+      "User stories & acceptance criteria": {
+        "regex": "user stor(y|ies)|acceptance criteria",
+        "have": false
+      },
+      "Process mapping/BPMN": {
+        "regex": "process (map|flow|model)|bpmn|swim ?lane|as-is|to-be",
+        "have": false
+      },
+      "Gap analysis": {
+        "regex": "gap analysis",
+        "have": false
+      },
+      "Stakeholder management": {
+        "regex": "stakeholder",
+        "have": false
+      },
+      "UAT": {
+        "regex": "\\buat\\b|user acceptance",
+        "have": false
+      },
+      "Agile/Scrum": {
+        "regex": "\\bagile\\b|scrum|kanban|sprint",
+        "have": false
+      },
+      "Jira/Confluence": {
+        "regex": "\\bjira\\b|confluence",
+        "have": false
+      },
+      "Visio/Lucidchart": {
+        "regex": "visio|lucidchart|miro",
+        "have": false
+      },
+      "SQL": {
+        "regex": "\\bsql\\b",
+        "have": false
+      },
+      "Excel (advanced)": {
+        "regex": "\\bexcel\\b|vlookup|pivot table|xlookup",
+        "have": false
+      },
+      "Power BI": {
+        "regex": "power ?bi",
+        "have": false
+      },
+      "Tableau": {
+        "regex": "tableau",
+        "have": false
+      },
+      "Looker": {
+        "regex": "\\blooker\\b",
+        "have": false
+      },
+      "Data analysis": {
+        "regex": "data analysis|analy[sz]e data|data-driven",
+        "have": false
+      },
+      "KPIs/dashboards": {
+        "regex": "\\bkpis?\\b|dashboard|metrics",
+        "have": false
+      },
+      "Salesforce": {
+        "regex": "salesforce|\\bsfdc\\b",
+        "have": false
+      },
+      "ServiceNow": {
+        "regex": "servicenow",
+        "have": false
+      },
+      "SAP": {
+        "regex": "\\bsap\\b",
+        "have": false
+      },
+      "Workday (product)": {
+        "regex": "workday (hcm|financials)",
+        "have": false
+      },
+      "ERP/CRM": {
+        "regex": "\\berp\\b|\\bcrm\\b",
+        "have": false
+      },
+      "Business case/ROI": {
+        "regex": "business case|\\broi\\b|cost[- ]benefit",
+        "have": false
+      },
+      "Change management": {
+        "regex": "change management|organizational change",
+        "have": false
+      },
+      "Use cases/UML": {
+        "regex": "use cases?|\\buml\\b",
+        "have": false
+      },
+      "Wireframes/prototyping": {
+        "regex": "wireframe|mock-?up|figma|balsamiq",
+        "have": false
+      },
+      "CBAP/PMI-PBA": {
+        "regex": "\\bcbap\\b|\\bccba\\b|pmi-pba",
+        "have": false
+      },
+      "Product ownership": {
+        "regex": "product owner|backlog (grooming|refinement)|prioriti[sz]",
+        "have": false
+      },
+      "Financial services domain": {
+        "regex": "banking|\\bbank\\b|mortgage|lending|\\bloans?\\b|insurance|payments|capital markets|fintech",
+        "have": false
+      },
+      "Healthcare domain": {
+        "regex": "healthcare|hipaa|\\bhl7\\b|\\bfhir\\b|claims|payer|provider",
+        "have": false
+      },
+      "Python/R": {
+        "regex": "\\bpython\\b|\\br\\b(?= |,|/)",
+        "have": false
+      },
+      "ETL/data pipelines": {
+        "regex": "\\betl\\b|data pipeline|data warehouse",
+        "have": false
+      },
+      "Snowflake/BigQuery": {
+        "regex": "snowflake|bigquery|redshift",
+        "have": false
+      },
+      "APIs/integrations": {
+        "regex": "\\bapis?\\b|\\brest(ful)? api|system integrations?|integration (requirements|testing)",
+        "have": false
+      },
+      "Testing/QA": {
+        "regex": "test (cases|plans|scripts)|quality assurance|\\bqa\\b",
+        "have": false
+      },
+      "Documentation": {
+        "regex": "documentation|technical writing",
+        "have": false
+      },
+      "Presentation/communication": {
+        "regex": "presentation|communicat",
+        "have": false
+      },
+      "Project management": {
+        "regex": "project management|\\bpmp\\b|timeline|roadmap",
+        "have": false
+      },
+      "Risk & compliance": {
+        "regex": "risk management|\\bsox\\b|regulatory (compliance|reporting|requirements)|internal audit|compliance (program|requirements|reporting)",
+        "have": false
+      },
+      "Generative AI/Copilot": {
+        "regex": "generative ai|genai|\\bllm|copilot|chatgpt|prompt",
+        "have": false
+      }
+    },
+    "data_analytics": {
+      "SQL": {
+        "regex": "\\bsql\\b",
+        "have": false
+      },
+      "Python": {
+        "regex": "\\bpython\\b",
+        "have": false
+      },
+      "R": {
+        "regex": "\\br\\b(?= |,|/)",
+        "have": false
+      },
+      "Pandas": {
+        "regex": "pandas",
+        "have": false
+      },
+      "Statistics": {
+        "regex": "statistic(s|al)|regression|a/b test|hypothesis test",
+        "have": false
+      },
+      "Power BI": {
+        "regex": "power ?bi",
+        "have": false
+      },
+      "Tableau": {
+        "regex": "tableau",
+        "have": false
+      },
+      "Looker": {
+        "regex": "\\blooker\\b",
+        "have": false
+      },
+      "dbt": {
+        "regex": "\\bdbt\\b",
+        "have": false
+      },
+      "Airflow": {
+        "regex": "airflow",
+        "have": false
+      },
+      "Spark": {
+        "regex": "\\bspark\\b",
+        "have": false
+      },
+      "Snowflake": {
+        "regex": "snowflake",
+        "have": false
+      },
+      "BigQuery": {
+        "regex": "bigquery",
+        "have": false
+      },
+      "Databricks": {
+        "regex": "databricks",
+        "have": false
+      },
+      "Excel": {
+        "regex": "\\bexcel\\b",
+        "have": false
+      },
+      "Machine learning": {
+        "regex": "machine learning|\\bml\\b",
+        "have": false
+      },
+      "Data modeling": {
+        "regex": "data model|star schema|dimensional",
+        "have": false
+      },
+      "ETL/ELT": {
+        "regex": "\\betl\\b|\\belt\\b",
+        "have": false
+      },
+      "Experimentation": {
+        "regex": "experiment|a/b",
+        "have": false
+      }
+    },
+    "product_project_management": {
+      "Roadmapping": {
+        "regex": "roadmap",
+        "have": false
+      },
+      "Prioritization": {
+        "regex": "prioriti[sz]",
+        "have": false
+      },
+      "PRDs": {
+        "regex": "\\bprds?\\b|product requirements",
+        "have": false
+      },
+      "Agile/Scrum": {
+        "regex": "\\bagile\\b|scrum",
+        "have": false
+      },
+      "Jira": {
+        "regex": "\\bjira\\b",
+        "have": false
+      },
+      "OKRs/KPIs": {
+        "regex": "\\bokrs?\\b|\\bkpis?\\b",
+        "have": false
+      },
+      "User research": {
+        "regex": "user research|customer interviews|discovery",
+        "have": false
+      },
+      "A/B testing": {
+        "regex": "a/b test|experiment",
+        "have": false
+      },
+      "PMP/CSM": {
+        "regex": "\\bpmp\\b|\\bcsm\\b|certified scrum",
+        "have": false
+      },
+      "Budget/vendor management": {
+        "regex": "budget|vendor",
+        "have": false
+      },
+      "Risk management": {
+        "regex": "risk management|raid",
+        "have": false
+      },
+      "Go-to-market": {
+        "regex": "go-to-market|\\bgtm\\b|launch",
+        "have": false
+      },
+      "Stakeholder management": {
+        "regex": "stakeholder",
+        "have": false
+      },
+      "SQL/analytics": {
+        "regex": "\\bsql\\b",
+        "have": false
+      }
+    },
+    "software_engineering": {
+      "Python": {
+        "regex": "\\bpython\\b",
+        "have": false
+      },
+      "Java": {
+        "regex": "\\bjava\\b",
+        "have": false
+      },
+      "C#/.NET": {
+        "regex": "\\bc#|\\.net\\b",
+        "have": false
+      },
+      "JavaScript": {
+        "regex": "javascript|\\bjs\\b",
+        "have": false
+      },
+      "TypeScript": {
+        "regex": "typescript",
+        "have": false
+      },
+      "React": {
+        "regex": "\\breact\\b",
+        "have": false
+      },
+      "Node.js": {
+        "regex": "node\\.?js",
+        "have": false
+      },
+      "Go": {
+        "regex": "golang|(?-i:\\bGo\\b)(?=\\s*[,/)])|(?-i:\\bGo\\b)(?=\\s+(?:and|or)\\s+(?-i:[A-Z]))|(?:python|java|rust|c\\+\\+|ruby|kotlin|typescript),?\\s+(?:or\\s+|and\\s+|/\\s*)?(?-i:Go\\b)",
+        "have": false
+      },
+      "SQL": {
+        "regex": "\\bsql\\b|postgres|mysql",
+        "have": false
+      },
+      "REST APIs": {
+        "regex": "\\brest\\b|\\bapis?\\b",
+        "have": false
+      },
+      "Microservices": {
+        "regex": "microservice",
+        "have": false
+      },
+      "AWS": {
+        "regex": "\\baws\\b",
+        "have": false
+      },
+      "Azure": {
+        "regex": "\\bazure\\b",
+        "have": false
+      },
+      "Docker/Kubernetes": {
+        "regex": "docker|kubernetes",
+        "have": false
+      },
+      "CI/CD": {
+        "regex": "ci/cd|continuous integration",
+        "have": false
+      },
+      "Testing": {
+        "regex": "unit test|tdd|integration test",
+        "have": false
+      },
+      "System design": {
+        "regex": "system design|distributed system|scalab",
+        "have": false
+      }
+    },
+    "security": {
+      "Security": {
+        "regex": "security|iam\\b|rbac|least privilege|zero trust",
+        "have": false
+      },
+      "Key Vault/Vault": {
+        "regex": "key ?vault|hashicorp vault|\\bvault\\b",
+        "have": false
+      },
+      "Entra ID/AAD": {
+        "regex": "entra|azure ad|active directory",
+        "have": false
+      },
+      "Compliance": {
+        "regex": "iso ?27001|soc ?2|pci|hipaa|fedramp|nist",
+        "have": false
+      },
+      "DevSecOps": {
+        "regex": "devsecops|snyk|sonarqube|sast|dast",
+        "have": false
+      },
+      "Incident response": {
+        "regex": "incident|on-?call|postmortem",
+        "have": false
+      },
+      "Okta": {
+        "regex": "\\bokta\\b",
+        "have": false
+      },
+      "SAML/OIDC/OAuth": {
+        "regex": "\\bsaml\\b|\\boidc\\b|openid connect|\\boauth",
+        "have": false
+      },
+      "Conditional Access/Zero Trust": {
+        "regex": "conditional access|zero trust|ztna",
+        "have": false
+      },
+      "OPA/Rego/Policy engines": {
+        "regex": "\\bopa\\b|open policy agent|\\brego\\b|kyverno|gatekeeper",
+        "have": false
+      },
+      "Palo Alto/Fortinet firewalls": {
+        "regex": "palo alto|panorama|fortigate|fortinet",
+        "have": false
+      },
+      "Zscaler/Cloudflare": {
+        "regex": "zscaler|cloudflare",
+        "have": false
+      },
+      "SIEM/Sentinel": {
+        "regex": "\\bsiem\\b|sentinel|chronicle|soar",
+        "have": false
+      },
+      "CSPM/CNAPP (Wiz, Prisma)": {
+        "regex": "\\bcspm\\b|\\bcnapp\\b|\\bwiz\\b|prisma cloud|orca security",
+        "have": false
+      }
+    }
+  }
+}

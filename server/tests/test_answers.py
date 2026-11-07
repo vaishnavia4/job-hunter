@@ -1,0 +1,96 @@
+"""Regression tests for the answer bank, using real form labels seen in production.
+
+  python server/tests/test_answers.py [WORKSPACE]      (default: a temp workspace with a sample bank)
+
+With a real workspace (e.g. Vaishnavi's) it checks her stored answers; with no argument it builds a fixture.
+"""
+import json
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from jobhunter import answers  # noqa: E402
+from jobhunter.workspace import Workspace  # noqa: E402
+
+RACE_GH = ["Asian: East Asian", "Asian: South Asian", "Asian: Southeast Asian", "Black or African American", "Hispanic or Latinx", "White", "Decline To Self Identify"]
+ETH_BENCHLING = ["East Asian (Chinese, Japanese, Korean or Mongolian)", "South Asian (Bangladeshi, Bhutanese, Indian, Nepali, Pakistani, & Sri Lankan)",
+                 "Southeast Asian (Burmese, Cambodian, Filipino, Hmong, Indonesian, Laotian, Malaysian, Mien, Singaporean, Thai & Vietnamese)", "Middle Eastern, North African or Arab"]
+WD_SALARY = ["Select One", "$120,000-$130,000", "$130,000-$140,000", "$140,000-$150,000", "$150,000-$160,000"]
+DOORDASH_WORKED = ["I am a previous employee", "I am a previous contractor", "I am a previous DoorDash Dasher", "I am a current contractor",
+                   "I am a current DoorDash Dasher", "I am a current DoorDash employee", "I have not worked at DoorDash"]
+VET_TMO = ["Select One", "I AM NOT A VETERAN", "I IDENTIFY AS A VETERAN, JUST NOT A VEVRAA VETERAN", "I IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF VEVRAA VETERANS LISTED ABOVE", "I DO NOT WISH TO SELF-IDENTIFY"]
+
+CASES = [  # (label, options, expected status, expected value (option if options else answer))
+    ("Are you legally authorized to work in the country where this role is located, for any employer?", ["Yes", "No"], "ok", "Yes"),
+    ("Do you currently possess unrestricted lawful authorization to work in the U.S.? (If you begin employment, you will be required to provide proof of your identity and eligibility to work in the United States as a condition of employment.)", ["Select One", "Yes", "No"], "ok", "No"),
+    ("U.S. Work Authorization Status", ["Can work for any employer", "Can work for current employer", "Seeking work authorization"], "ok", "Can work for any employer"),
+    ("Race (*Please select one option that best describes how you identify*)*", RACE_GH, "ok", "Asian: South Asian"),
+    ("Ethnicity", ETH_BENCHLING, "ok", ETH_BENCHLING[1]),
+    ("Please select the Race/Ethnicity which most accurately describes how you identify yourself*", ["American Indian or Alaskan Native (United States of America)", "Asian (United States of America)", "White (United States of America)"], "ok", "Asian (United States of America)"),
+    ("Pronouns", ["She/Her/Hers", "He/Him/His", "They/Them/Theirs", "Prefer not to answer"], "ok", "She/Her/Hers"),
+    ("Have you worked at DoorDash?*", DOORDASH_WORKED, "ok", "I have not worked at DoorDash"),
+    ("Will you now require immigration sponsorship by our company to attain or maintain your employment eligibility (e.g., H-1B, E-3, TN, O-1, STEM OPT, or any immigration work authorization requiring a written application)?", ["Yes", "No"], "ok", "Yes"),
+    ("Will you in the future require immigration sponsorship by our company to attain or maintain your employment eligibility (e.g., H-1B, E-3, TN, O-1, STEM OPT)?", ["Yes", "No"], "ok", "Yes"),
+    ("Will you now or will you in the future require employment visa sponsorship?", ["Yes, I will require Harvey to sponsor my employment", "No, I do not require sponsorship to work in the country where this role is located"], "ok", "Yes, I will require Harvey to sponsor my employment"),
+    ("Desired Base Salary?*", WD_SALARY, "ok", "$140,000-$150,000"),
+    ("Would you like to receive communications via SMS and/or WhatsApp to the number provided about your application process?", ["Yes", "No"], "ok", "Yes"),
+    ("If I am applying for a job based in the United States, by checking 'Yes, I agree' below and submitting this application, I agree to T-Mobile's applicant Arbitration Agreement", None, "USER_MUST_TICK", None),
+    ("Please identify your Veteran status*", VET_TMO, "ok", "I AM NOT A VETERAN"),
+    ("Are you a current or former employee of Freddie Mac's current outside auditor, Price Waterhouse Coopers (PwC)?*", ["Select One", "Yes", "No"], "ok", "No"),
+    ("Is your spouse, domestic partner, dependent, child or sibling a current principal, shareholder or professional employee of Freddie Mac's current outside auditor, Price Waterhouse Coopers (PwC)?*", ["Yes", "No"], "ok", "No"),
+    ("Freddie Mac does not permit dual employment. Dual employment is defined as outside employment ...", ["Select One", "Yes - I acknowledge", "No - I do not acknowledge"], "ok", "Yes - I acknowledge"),
+    ("Are you located within 50 miles of one of the following office hubs", ["San Francisco (Union Square)", "New York (Manhattan)", "No, but willing to relocate", "No, and not willing to relocate"], "ok", "No, but willing to relocate"),
+    ("Github Profile", None, "ok", None),
+    ("Preferred First Name", None, "ok", None),
+    ("How many years of experience do you have in software engineering?", None, "ok", None),
+    ("Degree", ["Bachelor's Degree", "Master's Degree", "Associate's Degree"], "ok", "Bachelor's Degree"),
+    ("School", None, "ok", None),
+    ("How have you used AI in the last 2 weeks?", None, "GENERATE_ESSAY", None),
+    ("Are you interested in relocating? If so, where?*", ["Local", "Statewide", "Nationwide", "Anywhere", "Not interested in relocating"], "ok", "Anywhere"),
+    ("In order to be employed at T-Mobile, you must be at least 18 years of age and provide proof of age upon hire. Can you meet this requirement?*", ["Yes", "No"], "ok", "Yes"),
+    ("Do you have any relatives employed by T-Mobile or its subsidiaries or affiliates?*", ["Yes", "No"], "ok", "No"),
+    ("Some brand-new question nobody has seen before?", None, "ASK_USER", None),
+]
+
+
+def fixture_workspace():
+    tmp = Path(tempfile.mkdtemp(prefix="jh_test_"))
+    (tmp / "profile").mkdir()
+    src = Path(__file__).resolve().parents[2] / "templates" / "answer_bank.sample.json"
+    shutil.copyfile(src, tmp / "profile" / "answer_bank.json")
+    (tmp / "profile" / "profile.json").write_text("{}", encoding="utf-8")
+    return tmp
+
+
+def main():
+    ws_path = Path(sys.argv[1]) if len(sys.argv) > 1 else fixture_workspace()
+    ws = Workspace(ws_path)
+    fails = 0
+    for label, opts, st, want in CASES:
+        r = answers.lookup(ws, label, opts)
+        got = r.get("option") if opts else r.get("answer")
+        ok = r["status"] == st and (want is None or got == want)
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'} | {label[:70]:70} -> {r['status']}: {got!r} [{r['question_id']}]" + ("" if ok else f"  (expected {st}: {want!r})"))
+    # verify_form: wrong race + resume in cover-letter box + missing required
+    v = answers.verify_form(ws, [
+        {"label": "Race", "value": "Asian: East Asian", "options": RACE_GH},
+        {"label": "Cover Letter", "value": "Resume_Vaishnavi_Akki_DoorDash_USA.pdf", "kind": "file"},
+        {"label": "Resume/CV*", "value": "Resume_Vaishnavi_Akki_DoorDash_USA.pdf", "kind": "file", "required": True},
+        {"label": "LinkedIn Profile*", "value": "", "required": True},
+        {"label": "Pronouns", "value": "She/Her/Hers", "options": ["She/Her/Hers", "He/Him/His"]},
+        {"label": "Phone*", "value": "(571) 786-9754"},
+    ])
+    vf_ok = (not v["pass"] and any(m["label"] == "Race" for m in v["mismatches"]) and v["file_problems"]
+             and "LinkedIn Profile*" in v["missing_required"] and "Pronouns" in v["ok"])
+    fails += not vf_ok
+    print(("PASS" if vf_ok else "FAIL") + " | verify_form flags East Asian, resume-in-cover-letter, missing LinkedIn; accepts pronouns/phone")
+    print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
+    print(f"\n{len(CASES) + 1 - fails}/{len(CASES) + 1} passed")
+    sys.exit(1 if fails else 0)
+
+
+if __name__ == "__main__":
+    main()

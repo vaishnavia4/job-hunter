@@ -1,0 +1,222 @@
+{
+  "Go": [
+    "Most-asked coding language for SRE/platform/infra roles; many interviews include a Go or Python coding round.",
+    "A Tour of Go (go.dev/tour) -> 'Learn Go with Tests' (free book) -> Go by Example. ~4-6 weeks part-time.",
+    "Write a small Go CLI/K8s operator (e.g. Azure cost-cleanup or a Kubernetes controller that labels idle namespaces); publish on GitHub."
+  ],
+  "GitHub Actions": [
+    "Second most common CI/CD after Jenkins/ADO; startups default to it.",
+    "GitHub Docs 'Learn GitHub Actions' + GitHub Skills courses (free). ~1 week.",
+    "Port one of your Azure DevOps pipelines (Bicep what-if + deploy with OIDC federated credentials) to GitHub Actions; public repo."
+  ],
+  "GitLab CI": [
+    "Common at enterprises/fintech.",
+    "GitLab CI/CD docs + GitLab Learn (free).",
+    "Mirror the same pipeline in .gitlab-ci.yml."
+  ],
+  "Helm": [
+    "Standard way to package K8s apps; often 'required' for platform/SRE.",
+    "helm.sh docs 'Chart Template Guide'. ~1 week.",
+    "Helm chart for a sample app with values per env; deploy to AKS via pipeline."
+  ],
+  "Argo CD": [
+    "GitOps is the default K8s deploy pattern at modern shops.",
+    "Argo CD 'Getting Started' + Akuity/Codefresh GitOps cert (free).",
+    "App-of-apps repo deploying the Helm chart to AKS/kind with Argo CD."
+  ],
+  "GitOps": [
+    "Pairs with Argo CD/Flux.",
+    "Codefresh 'GitOps Fundamentals' (free cert).",
+    "Same as Argo CD project."
+  ],
+  "Datadog": [
+    "Most common commercial observability tool in JDs.",
+    "Datadog Learning Center (free courses + sandbox).",
+    "Instrument a sample app; dashboards + SLO monitors; add screenshots to portfolio."
+  ],
+  "OpenTelemetry": [
+    "Vendor-neutral tracing/metrics standard; rising fast.",
+    "opentelemetry.io docs + 'OpenTelemetry Fundamentals' (Linux Foundation, free).",
+    "Add OTel tracing to the sample app exporting to Grafana/Azure Monitor."
+  ],
+  "SRE/SLOs": [
+    "SRE roles expect SLI/SLO/error-budget fluency.",
+    "Google SRE Book + SRE Workbook chapters on SLOs (free online).",
+    "Define SLOs + burn-rate alerts for a production service in Azure Monitor; write it up (no confidential data)."
+  ],
+  "Kafka": [
+    "Event streaming shows up in platform roles.",
+    "Confluent Developer free courses.",
+    "Small producer/consumer demo on AKS."
+  ],
+  "Okta": [
+    "Corporate identity roles ask for Okta specifically.",
+    "Okta Developer docs + free Okta Workforce trial; Okta Certified Professional.",
+    "Okta tenant with SAML/OIDC app + SCIM provisioning to a test app; write-up."
+  ],
+  "SAML/OIDC/OAuth": [
+    "Identity/security roles test protocol depth.",
+    "oauth.com 'OAuth 2.0 Simplified' + Microsoft identity platform docs.",
+    "Demo app using Entra ID OIDC + workload identity federation; explain flows in README."
+  ],
+  "Conditional Access/Zero Trust": [
+    "You already run Entra ID - this is a short hop.",
+    "Microsoft Learn SC-300 path (Identity and Access Administrator).",
+    "Get SC-300 certified; document a Conditional Access baseline."
+  ],
+  "OPA/Rego/Policy engines": [
+    "Policy-as-code for K8s/Terraform in security/platform roles.",
+    "OPA docs + Styra Academy (free).",
+    "Gatekeeper/Kyverno policies on AKS + conftest on Terraform/Bicep in CI."
+  ],
+  "Palo Alto/Fortinet firewalls": [
+    "Network-security roles want a named NGFW vendor.",
+    "Palo Alto Beacon free courses (PCNSA prep).",
+    "PCNSA cert, or lab VM-Series in Azure hub-and-spoke."
+  ],
+  "Zscaler/Cloudflare": [
+    "SASE/edge security in network-security roles.",
+    "Zscaler Academy (free ZDTA) / Cloudflare Learning Center.",
+    "ZDTA cert."
+  ],
+  "BGP/routing protocols": [
+    "Data-center/network SRE roles.",
+    "Cisco/Juniper free BGP labs, Azure Route Server + VPN BGP docs.",
+    "Azure VPN with BGP lab write-up."
+  ],
+  "SIEM/Sentinel": [
+    "Security engineering roles; Sentinel fits your Azure stack.",
+    "Microsoft Learn SC-200 path.",
+    "Sentinel workspace with analytics rules on Azure activity logs."
+  ],
+  "CSPM/CNAPP (Wiz, Prisma)": [
+    "Cloud-security roles.",
+    "Wiz/Prisma free webinars; Defender for Cloud (you have) maps directly.",
+    "Write-up of Defender CSPM posture work."
+  ],
+  "Python software engineering": [
+    "Many SRE roles want Python as engineering, not scripts (tests, packaging, typing).",
+    "'Python for DevOps' (O'Reilly) + pytest docs; build with tests + CI.",
+    "Publish a tested Python CLI (e.g. Azure cost reporter) on PyPI/GitHub."
+  ],
+  "CKA/CKAD cert": [
+    "Frequently 'preferred'; cheap signal for K8s depth.",
+    "KodeKloud CKA course + killer.sh simulator. ~6-8 weeks.",
+    "Pass CKA."
+  ],
+  "AWS DevOps/SA Pro cert": [
+    "Preferred cert in AWS-heavy SRE roles.",
+    "Adrian Cantrill / Stephane Maarek courses.",
+    "Pass AWS DevOps Engineer - Professional."
+  ],
+  "Terraform Cloud/Enterprise": [
+    "Large Terraform shops use TFC/TFE.",
+    "HashiCorp Terraform Associate (003) + HCP Terraform tutorials.",
+    "Terraform Associate cert."
+  ],
+  "MLOps": [
+    "Fast-growing area adjacent to your platform skills.",
+    "Microsoft Learn DP-100 / Azure ML MLOps; 'Made With ML' MLOps course (free).",
+    "Azure ML pipeline + model deployment via Bicep and Azure DevOps."
+  ],
+  "ML platforms": [
+    "MLOps roles name Azure ML/SageMaker/Databricks/MLflow.",
+    "Databricks Academy (free) + MLflow docs.",
+    "MLflow tracking + model registry demo."
+  ],
+  "LLM/GenAI": [
+    "AI platform roles; you already use Claude Code/MCP.",
+    "Microsoft Learn AI-102 / Azure OpenAI; Anthropic & OpenAI docs.",
+    "Deploy a secure RAG/agent stack on Azure (private endpoints, Key Vault, APIM) with Bicep - very marketable."
+  ],
+  "GPU": [
+    "AI infra roles.",
+    "NVIDIA DLI free courses; AKS GPU node pools docs.",
+    "AKS GPU node pool + model serving demo."
+  ],
+  "Linux internals/performance": [
+    "SRE interviews probe this.",
+    "Brendan Gregg 'Systems Performance' + Linux perf tools.",
+    "Write-up of a perf investigation."
+  ],
+  "Capacity planning": [
+    "SRE roles list it; you have right-sizing evidence.",
+    "Google SRE Workbook capacity chapters.",
+    "Add a capacity-planning bullet if you've done forecasting."
+  ],
+  "Backstage/IDP": [
+    "Platform-engineering roles.",
+    "backstage.io docs; CNCF Platform Engineering whitepaper.",
+    "Backstage template that provisions your Bicep modules."
+  ],
+  "Chaos engineering": [
+    "Some SRE roles.",
+    "Azure Chaos Studio docs.",
+    "Chaos Studio experiment on a test environment."
+  ],
+  "Java": [
+    "Some infra roles want JVM experience.",
+    "Only if targeting Java shops.",
+    "-"
+  ],
+  "TypeScript": [
+    "Front-end/full-stack infra tooling.",
+    "TypeScript handbook.",
+    "Low priority for your targets."
+  ],
+  "Pulumi": [
+    "IaC alternative.",
+    "Pulumi docs (free).",
+    "Port a Bicep module to Pulumi (C#/Python)."
+  ],
+  "Istio/Service mesh": [
+    "Platform roles at scale.",
+    "Istio docs + Tetrate Academy (free).",
+    "Istio on AKS demo."
+  ],
+  "Windows Server/AD": [
+    "Enterprise infra/IT-systems roles.",
+    "Microsoft Learn AZ-800.",
+    "Only if targeting IT-infrastructure roles."
+  ],
+  "Power BI": [
+    "Most-requested BI tool in analyst roles.",
+    "Microsoft Learn PL-300 path (free) -> PL-300 cert.",
+    "Publish a dashboard on public data with a short write-up."
+  ],
+  "Tableau": [
+    "Common BI tool in analyst roles.",
+    "Tableau Public + free training videos.",
+    "A Tableau Public viz linked from your resume."
+  ],
+  "SQL": [
+    "Asked in almost every analyst interview.",
+    "SQLBolt, Mode SQL tutorial, LeetCode/StrataScratch SQL.",
+    "A query portfolio on a public dataset (GitHub)."
+  ],
+  "Process mapping/BPMN": [
+    "Core BA deliverable.",
+    "BPMN 2.0 basics (Camunda/Lucidchart guides).",
+    "A before/after process map for a real process."
+  ],
+  "CBAP/PMI-PBA": [
+    "Recognised BA credential.",
+    "IIBA BABOK guide; CCBA/CBAP prep.",
+    "Earn ECBA/CCBA/CBAP."
+  ],
+  "Salesforce": [
+    "CRM BA roles ask for it.",
+    "Salesforce Trailhead (free) -> Administrator / Business Analyst cert.",
+    "Trailhead superbadges."
+  ],
+  "Agile/Scrum": [
+    "Most teams run Scrum/Kanban.",
+    "Scrum Guide + PSPO I / CSPO.",
+    "PSPO I certification."
+  ],
+  "Generative AI/Copilot": [
+    "Employers now expect AI-assisted analysis.",
+    "Microsoft Copilot / ChatGPT for analysts courses; prompt engineering guides.",
+    "A documented AI-assisted analysis or automation."
+  ]
+}

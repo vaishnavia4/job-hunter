@@ -1,0 +1,1312 @@
+{
+  "_note": "Canonical application questions. First matching entry wins (specific wordings first). Answers live in the workspace's profile/answer_bank.json (setup + learned corrections), falling back to profile_key in profile.json.",
+  "yes_hints": [
+    "^yes\\b",
+    "^i (am|do|have|will|can|acknowledge|agree|accept|consent)\\b(?!.*\\b(not|never)\\b)"
+  ],
+  "no_hints": [
+    "^no\\b",
+    "\\b(i have not|i haven't|i am not|i do not|i don't|i will not|never)\\b"
+  ],
+  "questions": [
+    {
+      "id": "arbitration",
+      "category": "legal",
+      "prompt": "Arbitration agreements: these waive court/jury rights. You must tick these yourself each time.",
+      "patterns": [
+        "arbitration"
+      ],
+      "type": "user_must_tick",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Never auto-tick. Show the text + link to the user."
+    },
+    {
+      "id": "certify_true",
+      "category": "legal",
+      "prompt": "'I certify the information is true and complete' attestations: confirm you want Claude to tick these for you, or tick them yourself.",
+      "patterns": [
+        "\\bi (certify|affirm|attest)\\b",
+        "true,? (and |, )?(correct|complete)",
+        "i consent to the terms"
+      ],
+      "type": "user_must_tick",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Attestation of truthfulness. User ticks unless answer_bank has a user-given answer."
+    },
+    {
+      "id": "over_18",
+      "category": "consents",
+      "prompt": "Are you 18 or older?",
+      "patterns": [
+        "18 years",
+        "age of 18",
+        "at least 18"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.over_18",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "auth_status_choice",
+      "category": "work_authorization",
+      "prompt": "Multiple-choice work authorization status (e.g. 'Can work for any employer' / 'Can work for current employer' / 'Seeking work authorization'): which option do you want?",
+      "patterns": [
+        "(work|employment) authori[sz]ation status",
+        "authori[sz]ation status",
+        "employment eligibility status"
+      ],
+      "type": "choice",
+      "profile_key": "work_authorization.status_choice",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Pick the option exactly as the user chose during setup."
+    },
+    {
+      "id": "auth_any_employer",
+      "category": "work_authorization",
+      "prompt": "'Are you legally authorized to work in the US FOR ANY EMPLOYER?' - Yes or No?",
+      "patterns": [
+        "for any employer",
+        "any employer"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.authorized_for_any_employer",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "auth_unrestricted",
+      "category": "work_authorization",
+      "prompt": "'Do you possess UNRESTRICTED authorization to work in the US?' - Yes or No? (H-1B/OPT holders usually: No)",
+      "patterns": [
+        "unrestricted"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.unrestricted_authorization",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "auth_without_sponsorship",
+      "category": "work_authorization",
+      "prompt": "'Are you authorized to work WITHOUT sponsorship?' - Yes or No?",
+      "patterns": [
+        "authori[sz]ed to work.{0,80}without.{0,40}sponsor",
+        "without (the need for |requiring )?(visa |employer )?sponsorship"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.authorized_without_sponsorship",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sponsor_now_or_future",
+      "category": "work_authorization",
+      "prompt": "'Will you now OR in the future require visa sponsorship?' - Yes or No?",
+      "patterns": [
+        "now,? or (sometime |at any time )?in the future",
+        "now or (in )?(the )?future",
+        "currently or (will )?in the future",
+        "(now|future).{0,60}sponsor.{0,60}(now|future)"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.requires_sponsorship_now_or_future",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sponsor_now",
+      "category": "work_authorization",
+      "prompt": "'Will you NOW require sponsorship (to attain or maintain eligibility, e.g. H-1B transfer)?' - Yes or No? (An H-1B transfer = Yes.)",
+      "patterns": [
+        "\\bnow require.{0,80}sponsor",
+        "currently require.{0,40}sponsor",
+        "\\bnow\\b.{0,40}sponsor"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.requires_sponsorship_now",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sponsor_future",
+      "category": "work_authorization",
+      "prompt": "'Will you IN THE FUTURE require sponsorship?' - Yes or No?",
+      "patterns": [
+        "in the future require.{0,80}sponsor",
+        "future.{0,60}sponsor"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.requires_sponsorship_future",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sponsor_any",
+      "category": "work_authorization",
+      "prompt": "Generic 'Do you require visa sponsorship?' - Yes or No?",
+      "patterns": [
+        "sponsor"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.requires_sponsorship_now_or_future",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "visa_type",
+      "category": "work_authorization",
+      "prompt": "Current visa / immigration status (e.g. H-1B, Green Card, US Citizen, OPT):",
+      "patterns": [
+        "visa (type|status)",
+        "immigration status",
+        "current (work )?visa",
+        "type of (work )?authori[sz]ation"
+      ],
+      "type": "text",
+      "profile_key": "work_authorization.visa_status",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "opt_ead",
+      "category": "work_authorization",
+      "prompt": "Are you on OPT / STEM OPT / an EAD card? Yes or No?",
+      "patterns": [
+        "\\b(stem )?opt\\b",
+        "\\bead\\b",
+        "employment authori[sz]ation document"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.opt_or_ead",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "legally_authorized",
+      "category": "work_authorization",
+      "prompt": "'Are you legally authorized to work in the US?' - Yes or No?",
+      "patterns": [
+        "legally (authori[sz]ed|eligible|able) to work",
+        "authori[sz]ed to work in the (united states|u\\.?s\\.?)",
+        "eligible to work in the (united states|u\\.?s\\.?)",
+        "lawful(ly)? (authori[sz]ation|authori[sz]ed)"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.authorized_to_work_in_us",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "us_citizen",
+      "category": "work_authorization",
+      "prompt": "Are you a US citizen? (only used to filter jobs / when a form asks)",
+      "patterns": [
+        "u\\.?s\\.? citizen",
+        "citizenship"
+      ],
+      "type": "yes_no",
+      "profile_key": "work_authorization.us_citizen",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "clearance",
+      "category": "work_authorization",
+      "prompt": "Do you hold (or can you obtain) a US government security clearance?",
+      "patterns": [
+        "security clearance",
+        "\\bclearance\\b",
+        "public trust"
+      ],
+      "type": "choice",
+      "profile_key": "work_authorization.security_clearance",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "family_at_auditor",
+      "category": "employment_history",
+      "prompt": "Is your spouse/partner/dependent/child/sibling employed by the company's outside auditor?",
+      "patterns": [
+        "(spouse|domestic partner|dependent|child|sibling).{0,200}auditor"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.family_at_auditor",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "auditor_employee",
+      "category": "employment_history",
+      "prompt": "Are you a current or former employee of the company's outside auditor (e.g. PwC/Deloitte/EY/KPMG)?",
+      "patterns": [
+        "(employee|worked).{0,80}(outside |external )?auditor",
+        "price ?waterhouse|pwc"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.pwc_or_auditor_employee",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "If the question is about FAMILY at the auditor it matches family_at_auditor first."
+    },
+    {
+      "id": "audited_company",
+      "category": "employment_history",
+      "prompt": "In the last 3 years, did you participate in an external audit of this company?",
+      "patterns": [
+        "participate.{0,60}audit"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.audited_company",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "restrictive_agreement",
+      "category": "employment_history",
+      "prompt": "Are you subject to a non-compete / non-solicit / confidentiality or other agreement that could restrict you working for a new employer?",
+      "patterns": [
+        "non.?compete",
+        "(agreement|covenant).{0,120}restrict",
+        "restrictive covenant"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.non_compete",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "federal_employment",
+      "category": "employment_history",
+      "prompt": "In the past 2 years, were you employed by the US federal government or a regulator (e.g. FHFA)?",
+      "patterns": [
+        "federal (government|housing)",
+        "\\bfhfa\\b",
+        "government (employee|official)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.federal_govt_last_2y",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "dual_employment",
+      "category": "employment_history",
+      "prompt": "Dual-employment policy acknowledgement (outside job during the same hours not allowed): acknowledge?",
+      "patterns": [
+        "dual employment"
+      ],
+      "type": "choice",
+      "profile_key": "standard_answers.dual_employment_ack",
+      "options_hint": [
+        "yes.{0,10}acknowledge",
+        "^yes"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "outside_business",
+      "category": "employment_history",
+      "prompt": "Do you intend to keep any outside employment, volunteer role or board seat with an entity that does business with / competes with the employer?",
+      "patterns": [
+        "board membership",
+        "outside (employment|business|activit)",
+        "volunteerism"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.conflicting_outside_business",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "real_estate_license",
+      "category": "employment_history",
+      "prompt": "Do you hold (and intend to use) a real-estate or broker license?",
+      "patterns": [
+        "real estate.{0,40}licen",
+        "broker licen"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.real_estate_license",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "confidential_info",
+      "category": "employment_history",
+      "prompt": "Do you hold confidential information / trade secrets from a prior employer that relate to the new role?",
+      "patterns": [
+        "confidential information",
+        "trade secret",
+        "proprietary information"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.confidential_info_from_prior_employer",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "relatives_at_company",
+      "category": "employment_history",
+      "prompt": "Do you have relatives (or a dating/family relationship) with anyone employed by the company?",
+      "patterns": [
+        "relatives? (employed|work)",
+        "relationship \\(dating or familial\\)",
+        "(family|relative|related to).{0,80}(employ|work)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.relatives_at_company",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "dealer_affiliate",
+      "category": "employment_history",
+      "prompt": "Have you worked for an authorized dealer / franchise / affiliate of the company?",
+      "patterns": [
+        "authori[sz]ed dealer",
+        "\\bdealer\\b",
+        "franchise"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.dealer_or_affiliate",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "previous_contractor",
+      "category": "employment_history",
+      "prompt": "Have you previously worked at the company as a contractor/contingent worker?",
+      "patterns": [
+        "(as a )?contractor for",
+        "contract(or| worker)s? (for|at|with)",
+        "contingent worker"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.previously_contractor",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "previously_employed",
+      "category": "employment_history",
+      "prompt": "Have you previously worked at the company you're applying to? (default: No - checked per company)",
+      "patterns": [
+        "(previously|ever) (been )?(directly )?employed",
+        "have you (ever )?worked (at|for)",
+        "ever been an employee",
+        "former employee",
+        "current or former employee",
+        "directly employed with"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.previously_worked_here",
+      "options_hint": [
+        "have not worked",
+        "never (worked|been)",
+        "^no$",
+        "^no\\b"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "referred",
+      "category": "sourcing",
+      "prompt": "Were you referred by a current employee? (name if yes)",
+      "patterns": [
+        "referred by",
+        "employee referral",
+        "were you referred",
+        "know anyone (who works|at)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.referred_by_employee",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "how_heard",
+      "category": "sourcing",
+      "prompt": "How did you hear about this job? (default: the company's careers site)",
+      "patterns": [
+        "how did you (hear|find|learn)",
+        "where did you (hear|find|see)",
+        "^source\\b",
+        "how did you come across"
+      ],
+      "type": "choice",
+      "profile_key": "standard_answers.how_did_you_hear",
+      "options_hint": [
+        "careers? (site|website|page)",
+        "company (website|site)",
+        "\\.com/careers",
+        "^website$",
+        "direct source",
+        "job board",
+        "other"
+      ],
+      "option_strategy": "",
+      "notes": "Workday sometimes nests options: pick 'Website' then '<Company> Careers Website'."
+    },
+    {
+      "id": "spouse_military",
+      "category": "eeo",
+      "prompt": "Has your spouse or domestic partner served in the US military?",
+      "patterns": [
+        "spouse.{0,40}(served|military)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.spouse_military",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "served_military",
+      "category": "eeo",
+      "prompt": "Have you ever served in the US military?",
+      "patterns": [
+        "(currently or have you ever |ever )served",
+        "served in the u\\.?s\\.? (military|armed)"
+      ],
+      "type": "yes_no",
+      "profile_key": "eeo_voluntary.served_military",
+      "options_hint": [
+        "^no\\b.*never served",
+        "^no\\b"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "veteran_status",
+      "category": "eeo",
+      "prompt": "Protected veteran status (or decline):",
+      "patterns": [
+        "veteran"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.veteran_status",
+      "options_hint": [
+        "not a protected veteran",
+        "\\bnot a veteran\\b",
+        "i am not a veteran",
+        "never served"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "pronouns",
+      "category": "eeo",
+      "prompt": "Pronouns (or prefer not to answer):",
+      "patterns": [
+        "pronoun"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.pronouns",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "gender",
+      "category": "eeo",
+      "prompt": "Gender (or decline):",
+      "patterns": [
+        "\\bgender\\b",
+        "\\bsex\\b"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.gender",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Option text varies: Female / Woman."
+    },
+    {
+      "id": "transgender",
+      "category": "eeo",
+      "prompt": "Do you identify as transgender? (or decline)",
+      "patterns": [
+        "transgender"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.transgender",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sexual_orientation",
+      "category": "eeo",
+      "prompt": "Sexual orientation (or decline):",
+      "patterns": [
+        "sexual orientation"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.sexual_orientation",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "hispanic",
+      "category": "eeo",
+      "prompt": "Are you Hispanic or Latino? (or decline)",
+      "patterns": [
+        "hispanic",
+        "latin[oaxe]"
+      ],
+      "type": "yes_no",
+      "profile_key": "eeo_voluntary.hispanic_or_latino",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "race",
+      "category": "eeo",
+      "prompt": "Race / ethnicity (or decline). If you pick a broad group, also tell me your subgroup (e.g. Asian -> South Asian (Indian)), because many forms list subgroups.",
+      "patterns": [
+        "\\brace\\b",
+        "ethnicity",
+        "racial"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.race",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Subgroup-aware: options_hint lists most-specific first (e.g. 'South Asian', 'Indian', 'Asian'). Never pick the first option that merely contains 'Asian'."
+    },
+    {
+      "id": "disability",
+      "category": "eeo",
+      "prompt": "Disability status (or decline):",
+      "patterns": [
+        "disabilit"
+      ],
+      "type": "choice",
+      "profile_key": "eeo_voluntary.disability_status",
+      "options_hint": [
+        "^no\\b",
+        "do not have a disability"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "preferred_first_name",
+      "category": "identity",
+      "prompt": "Preferred first name:",
+      "patterns": [
+        "preferred first name",
+        "preferred name"
+      ],
+      "type": "text",
+      "profile_key": "personal.preferred_first_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "preferred_last_name",
+      "category": "identity",
+      "prompt": "Preferred last name:",
+      "patterns": [
+        "preferred last name"
+      ],
+      "type": "text",
+      "profile_key": "personal.preferred_last_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "first_name",
+      "category": "identity",
+      "prompt": "Legal first name:",
+      "patterns": [
+        "^(legal )?first name",
+        "given name"
+      ],
+      "type": "text",
+      "profile_key": "personal.first_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "middle_name",
+      "category": "identity",
+      "prompt": "Middle name (blank if none):",
+      "patterns": [
+        "middle name"
+      ],
+      "type": "text",
+      "profile_key": "personal.middle_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "last_name",
+      "category": "identity",
+      "prompt": "Legal last name:",
+      "patterns": [
+        "^(legal )?last name",
+        "surname",
+        "family name"
+      ],
+      "type": "text",
+      "profile_key": "personal.last_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "full_name",
+      "category": "identity",
+      "prompt": "Full legal name:",
+      "patterns": [
+        "^(legal )?(first and last |full )?name$",
+        "legal (first and last )?name",
+        "^full name"
+      ],
+      "type": "text",
+      "profile_key": "personal.full_name",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "email",
+      "category": "contact",
+      "prompt": "Email:",
+      "patterns": [
+        "e-?mail"
+      ],
+      "type": "text",
+      "profile_key": "personal.email",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "phone_type",
+      "category": "contact",
+      "prompt": "Phone device type (Mobile/Home):",
+      "patterns": [
+        "phone (device )?type"
+      ],
+      "type": "choice",
+      "profile_key": "personal.phone_type",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "phone",
+      "category": "contact",
+      "prompt": "Phone number:",
+      "patterns": [
+        "phone",
+        "mobile number"
+      ],
+      "type": "text",
+      "profile_key": "personal.phone",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "linkedin",
+      "category": "contact",
+      "prompt": "LinkedIn URL:",
+      "patterns": [
+        "linkedin"
+      ],
+      "type": "text",
+      "profile_key": "personal.linkedin",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "github",
+      "category": "contact",
+      "prompt": "GitHub URL - and should it be filled only when REQUIRED, or always?",
+      "patterns": [
+        "github",
+        "git hub"
+      ],
+      "type": "text",
+      "profile_key": "personal.github",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Policy in answer_bank note: fill when required; optional only if the profile is presentable."
+    },
+    {
+      "id": "portfolio",
+      "category": "contact",
+      "prompt": "Portfolio / personal website URL - fill always, only when required, or never?",
+      "patterns": [
+        "portfolio",
+        "personal (website|site)",
+        "^website"
+      ],
+      "type": "text",
+      "profile_key": "personal.website",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "address",
+      "category": "location",
+      "prompt": "Street address:",
+      "patterns": [
+        "address line 1",
+        "street address",
+        "^address$"
+      ],
+      "type": "text",
+      "profile_key": "personal.address_line1",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "city",
+      "category": "location",
+      "prompt": "City:",
+      "patterns": [
+        "^city$"
+      ],
+      "type": "text",
+      "profile_key": "personal.city",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "state",
+      "category": "location",
+      "prompt": "State:",
+      "patterns": [
+        "^state( or province)?$",
+        "^province"
+      ],
+      "type": "choice",
+      "profile_key": "personal.state",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "zip",
+      "category": "location",
+      "prompt": "ZIP / postal code:",
+      "patterns": [
+        "postal code",
+        "\\bzip\\b"
+      ],
+      "type": "text",
+      "profile_key": "personal.zip",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "country",
+      "category": "location",
+      "prompt": "Country:",
+      "patterns": [
+        "^country$",
+        "country of residence"
+      ],
+      "type": "choice",
+      "profile_key": "personal.country",
+      "options_hint": [
+        "^united states( of america)?$",
+        "^united states",
+        "^usa?$"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "office_hub",
+      "category": "location",
+      "prompt": "When a form asks if you're within commuting distance of a listed office hub: answer 'not near but willing to relocate'?",
+      "patterns": [
+        "within \\d+ miles",
+        "office hubs?",
+        "currently based in the listed location",
+        "based in (this|the listed) location"
+      ],
+      "type": "choice",
+      "profile_key": "job_preferences.office_hub_answer",
+      "options_hint": [
+        "not (based|located).{0,40}willing to relocate",
+        "willing to relocate",
+        "^no\\b.{0,20}relocat"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "in_office_days",
+      "category": "location",
+      "prompt": "Are you able to work in the office N days/week (hybrid/on-site) if you relocate?",
+      "patterns": [
+        "(office|in.person|on.?site).{0,60}(\\d|days|week|monday)",
+        "hybrid (work )?model",
+        "days? (per|/|a) ?week"
+      ],
+      "type": "yes_no",
+      "profile_key": "job_preferences.onsite_ok",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "remote_only",
+      "category": "location",
+      "prompt": "Are you only able to work remotely?",
+      "patterns": [
+        "remote only",
+        "only (able|willing) to work remote"
+      ],
+      "type": "yes_no",
+      "profile_key": "job_preferences.remote_only",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "relocation",
+      "category": "location",
+      "prompt": "Willing to relocate? Where? (Anywhere / Nationwide / Statewide / Local / No)",
+      "patterns": [
+        "relocat"
+      ],
+      "type": "choice",
+      "profile_key": "job_preferences.open_to_relocation",
+      "options_hint": [
+        "^anywhere$",
+        "nationwide",
+        "^yes\\b",
+        "willing to relocate"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "current_location",
+      "category": "location",
+      "prompt": "Current location (City, State) as typed into location autocompletes:",
+      "patterns": [
+        "^(current )?location( \\(city\\))?$",
+        "where are you (currently )?(located|based)",
+        "current (city|location)"
+      ],
+      "type": "text",
+      "profile_key": "personal.location_display",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": "Autocomplete: type 'City, State' and pick the option containing both."
+    },
+    {
+      "id": "travel",
+      "category": "consents",
+      "prompt": "Willing to travel? (and max %)",
+      "patterns": [
+        "travel"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.willing_to_travel",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "total_comp",
+      "category": "compensation",
+      "prompt": "Desired TOTAL compensation (base+bonus) for forms:",
+      "patterns": [
+        "total (desired )?(compensation|comp)",
+        "total (target )?pay"
+      ],
+      "type": "number",
+      "profile_key": "job_preferences.desired_total_comp",
+      "options_hint": [],
+      "option_strategy": "bracket",
+      "notes": ""
+    },
+    {
+      "id": "current_salary",
+      "category": "compensation",
+      "prompt": "Current salary - share it, or decline? (Many states ban salary-history questions; default: decline/skip if optional.)",
+      "patterns": [
+        "current (base )?(salary|compensation|pay)",
+        "salary history"
+      ],
+      "type": "text",
+      "profile_key": "job_preferences.current_salary_answer",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "desired_salary",
+      "category": "compensation",
+      "prompt": "Desired base salary to put on forms (number) - and for range dropdowns, which bracket?",
+      "patterns": [
+        "desired (base )?(salary|pay|compensation)",
+        "salary expectation",
+        "expected (base )?(salary|compensation|pay)",
+        "compensation expectation",
+        "salary requirement",
+        "desired base"
+      ],
+      "type": "number",
+      "profile_key": "job_preferences.desired_salary_answer",
+      "options_hint": [],
+      "option_strategy": "bracket",
+      "notes": ""
+    },
+    {
+      "id": "start_date",
+      "category": "availability",
+      "prompt": "Earliest start date / availability:",
+      "patterns": [
+        "start date",
+        "available to start",
+        "earliest (start|date)",
+        "when can you start"
+      ],
+      "type": "text",
+      "profile_key": "job_preferences.start_date",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "notice_period",
+      "category": "availability",
+      "prompt": "Notice period:",
+      "patterns": [
+        "notice period"
+      ],
+      "type": "text",
+      "profile_key": "job_preferences.notice_period",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "degree",
+      "category": "education",
+      "prompt": "Highest degree (as it should appear in degree dropdowns). Fill even when optional?",
+      "patterns": [
+        "\\bdegree\\b",
+        "highest (level of )?education",
+        "education level"
+      ],
+      "type": "choice",
+      "profile_key": "education.degree_choice",
+      "options_hint": [
+        "^bachelor",
+        "bachelor"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "field_of_study",
+      "category": "education",
+      "prompt": "Field of study / major:",
+      "patterns": [
+        "field of study",
+        "\\bmajor\\b",
+        "discipline"
+      ],
+      "type": "choice",
+      "profile_key": "education.field",
+      "options_hint": [
+        "^computer science$",
+        "computer and information science",
+        "computer science",
+        "computer"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "school",
+      "category": "education",
+      "prompt": "School / university. Fill even when optional?",
+      "patterns": [
+        "school",
+        "universit",
+        "college",
+        "institution"
+      ],
+      "type": "text",
+      "profile_key": "education.school",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "grad_year",
+      "category": "education",
+      "prompt": "Graduation year - fill only when required?",
+      "patterns": [
+        "graduat"
+      ],
+      "type": "text",
+      "profile_key": "education.graduation_year",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "gpa",
+      "category": "education",
+      "prompt": "GPA (blank unless required):",
+      "patterns": [
+        "\\bgpa\\b",
+        "overall result",
+        "grade point"
+      ],
+      "type": "text",
+      "profile_key": "education.gpa",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "years_software_engineering",
+      "category": "experience",
+      "prompt": "How should 'years of SOFTWARE ENGINEERING experience' be answered honestly for you?",
+      "patterns": [
+        "years.{0,40}software engineering",
+        "software engineering experience"
+      ],
+      "type": "text",
+      "profile_key": "experience.years_software_engineering_answer",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "years_skill",
+      "category": "experience",
+      "prompt": "Years of experience per skill (asked as 'How many years of X experience'):",
+      "patterns": [
+        "years.{0,30}experience.{0,20}(with|in|using) [a-z0-9 .#+/-]{2,40}",
+        "experience.{0,20}(with|in|using) .{2,40}\\(years\\)"
+      ],
+      "type": "number",
+      "profile_key": "experience.skill_years",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "years_total",
+      "category": "experience",
+      "prompt": "Total years of professional experience:",
+      "patterns": [
+        "how many years.{0,30}experience",
+        "years of (professional |relevant |total )?experience"
+      ],
+      "type": "number",
+      "profile_key": "experience.years_total",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "current_employer",
+      "category": "employment_history",
+      "prompt": "Current / most recent employer:",
+      "patterns": [
+        "current (or most recent )?(employer|company)",
+        "most recent employer"
+      ],
+      "type": "text",
+      "profile_key": "experience.current_employer",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "current_title",
+      "category": "employment_history",
+      "prompt": "Current job title:",
+      "patterns": [
+        "current (job )?title",
+        "most recent (job )?title"
+      ],
+      "type": "text",
+      "profile_key": "experience.current_title",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "privacy_ack",
+      "category": "consents",
+      "prompt": "Acknowledge applicant privacy notices (required to apply)?",
+      "patterns": [
+        "privacy (policy|notice|statement|acknowledg)",
+        "applicant privacy",
+        "data (processing|privacy) consent"
+      ],
+      "type": "choice",
+      "profile_key": "standard_answers.privacy_ack",
+      "options_hint": [
+        "acknowledge",
+        "i agree",
+        "^yes"
+      ],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "sms_consent",
+      "category": "consents",
+      "prompt": "Consent to SMS / WhatsApp messages about your application?",
+      "patterns": [
+        "\\bsms\\b",
+        "text messag",
+        "whatsapp"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.sms_consent",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "background_check",
+      "category": "consents",
+      "prompt": "Willing to undergo a background check?",
+      "patterns": [
+        "background (check|investigation|screening)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.background_check_ok",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "drug_test",
+      "category": "consents",
+      "prompt": "Willing to take a drug test?",
+      "patterns": [
+        "drug (test|screen)"
+      ],
+      "type": "yes_no",
+      "profile_key": "standard_answers.drug_test_ok",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "essay_why_company",
+      "category": "essays",
+      "prompt": "(generated per job from master resume + JD)",
+      "patterns": [
+        "why (are you interested|do you want|this (role|company|position))",
+        "interested in (joining|working)",
+        "why .{0,30}(join|us)\\??$"
+      ],
+      "type": "per_job_essay",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "essay_ai_usage",
+      "category": "essays",
+      "prompt": "(generated per job) - how you use AI tools, truthful, from the master resume",
+      "patterns": [
+        "\\bai\\b.{0,60}(use|using|tools)",
+        "(use|using|used).{0,40}\\bai\\b",
+        "artificial intelligence",
+        "\\bllms?\\b"
+      ],
+      "type": "per_job_essay",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "essay_values",
+      "category": "essays",
+      "prompt": "(generated per job) - example aligned to the company's values",
+      "patterns": [
+        "cultural values",
+        "core values",
+        "our values",
+        "aligns? with.{0,40}values"
+      ],
+      "type": "per_job_essay",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    },
+    {
+      "id": "essay_generic",
+      "category": "essays",
+      "prompt": "(generated per job)",
+      "patterns": [
+        "\\b(describe|tell us|share an example|give an example|explain)\\b"
+      ],
+      "type": "per_job_essay",
+      "profile_key": "",
+      "options_hint": [],
+      "option_strategy": "",
+      "notes": ""
+    }
+  ]
+}

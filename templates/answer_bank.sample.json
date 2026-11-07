@@ -1,0 +1,764 @@
+{
+  "_note": "FICTIONAL sample answer bank (H-1B candidate) used by server/tests. Not a real person.",
+  "answers": [
+    {
+      "id": "first_name",
+      "patterns": [],
+      "answer": "Sample",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "last_name",
+      "patterns": [],
+      "answer": "Candidate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "full_name",
+      "patterns": [],
+      "answer": "Sample Candidate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "preferred_first_name",
+      "patterns": [],
+      "answer": "Sample",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Always fill preferred name fields."
+    },
+    {
+      "id": "preferred_last_name",
+      "patterns": [],
+      "answer": "Candidate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "middle_name",
+      "patterns": [],
+      "answer": "",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "email",
+      "patterns": [],
+      "answer": "sample.candidate@example.com",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "phone",
+      "patterns": [],
+      "answer": "+1 555-010-0000",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "phone_type",
+      "patterns": [],
+      "answer": "Mobile",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "linkedin",
+      "patterns": [],
+      "answer": "https://www.linkedin.com/in/sample-candidate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "github",
+      "patterns": [],
+      "answer": "https://github.com/sample-candidate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Fill when the field is REQUIRED (*); leave optional GitHub fields blank until the profile is improved."
+    },
+    {
+      "id": "portfolio",
+      "patterns": [],
+      "answer": "",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Portfolio says  Aug 2023 / 5+ yrs (wrong). Don't list until fixed."
+    },
+    {
+      "id": "address",
+      "patterns": [],
+      "answer": "1 Example St",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "city",
+      "patterns": [],
+      "answer": "Denver",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "state",
+      "patterns": [],
+      "answer": "Colorado",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^colorado$"
+      ]
+    },
+    {
+      "id": "zip",
+      "patterns": [],
+      "answer": "80202",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "country",
+      "patterns": [],
+      "answer": "United States",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^united states( of america)?$",
+        "^united states"
+      ]
+    },
+    {
+      "id": "current_location",
+      "patterns": [],
+      "answer": "Denver, Colorado",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "denver.{0,5}colorado"
+      ]
+    },
+    {
+      "id": "relocation",
+      "patterns": [],
+      "answer": "Anywhere",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Open to relocating anywhere in the US.",
+      "options_hint": [
+        "^anywhere$",
+        "nationwide",
+        "^yes\\b",
+        "willing to relocate"
+      ]
+    },
+    {
+      "id": "office_hub",
+      "patterns": [],
+      "answer": "No, but willing to relocate",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "not (based|located).{0,40}willing to relocate",
+        "willing to relocate"
+      ]
+    },
+    {
+      "id": "in_office_days",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Yes to hybrid/on-site days (will relocate)."
+    },
+    {
+      "id": "remote_only",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "travel",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "legally_authorized",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "auth_any_employer",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "instruction 2026-11-07 (after )."
+    },
+    {
+      "id": "auth_status_choice",
+      "patterns": [],
+      "answer": "Can work for any employer",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "choice on  2026-11-07.",
+      "options_hint": [
+        "any employer"
+      ]
+    },
+    {
+      "id": "auth_unrestricted",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "H-1B is employer-specific (answered No on )."
+    },
+    {
+      "id": "auth_without_sponsorship",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "sponsor_now_or_future",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "sponsor_now",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "H-1B transfer requires a new petition."
+    },
+    {
+      "id": "sponsor_future",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "sponsor_any",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "visa_type",
+      "patterns": [],
+      "answer": "H-1B",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "opt_ead",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "us_citizen",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "clearance",
+      "patterns": [],
+      "answer": "None",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Not eligible (not a US citizen).",
+      "options_hint": [
+        "^none$",
+        "^no\\b",
+        "not eligible"
+      ]
+    },
+    {
+      "id": "previously_employed",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "have not worked",
+        "never (worked|been)",
+        "^no$",
+        "^no\\b"
+      ]
+    },
+    {
+      "id": "previous_contractor",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "dealer_affiliate",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "relatives_at_company",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Confirm with if a form asks for names."
+    },
+    {
+      "id": "auditor_employee",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "family_at_auditor",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "audited_company",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "restrictive_agreement",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "federal_employment",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "outside_business",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "real_estate_license",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "dual_employment",
+      "patterns": [],
+      "answer": "Yes - I acknowledge",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "yes.{0,10}acknowledge",
+        "^yes"
+      ]
+    },
+    {
+      "id": "confidential_info",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "referred",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "how_heard",
+      "patterns": [],
+      "answer": "Company careers website",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "careers? (site|website|page)",
+        "\\.com/careers",
+        "company (website|site)",
+        "^website$",
+        "direct source"
+      ]
+    },
+    {
+      "id": "current_employer",
+      "patterns": [],
+      "answer": "Example Corp",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "current_title",
+      "patterns": [],
+      "answer": "Senior Analyst",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "served_military",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "never served",
+        "^no\\b"
+      ]
+    },
+    {
+      "id": "spouse_military",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "veteran_status",
+      "patterns": [],
+      "answer": "I am not a protected veteran",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "not a protected veteran",
+        "\\bnot a veteran\\b",
+        "i am not a veteran"
+      ]
+    },
+    {
+      "id": "pronouns",
+      "patterns": [],
+      "answer": "She/Her/Hers",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "choice on  2026-11-07.",
+      "options_hint": [
+        "she/her",
+        "^she"
+      ]
+    },
+    {
+      "id": "gender",
+      "patterns": [],
+      "answer": "Female",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^female$",
+        "^woman$",
+        "^female",
+        "^woman"
+      ]
+    },
+    {
+      "id": "hispanic",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^no\\b",
+        "not hispanic"
+      ]
+    },
+    {
+      "id": "race",
+      "patterns": [],
+      "answer": "South Asian",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Asian (Indian). Subgroups -> South Asian. NEVER East/Southeast Asian. Don't use 'Indian' as a hint: it matches 'American Indian'.",
+      "options_hint": [
+        "south asian",
+        "^asian(?!.*(east|southeast))",
+        "(?<!american )\\basian\\b(?!.*(east|southeast))"
+      ]
+    },
+    {
+      "id": "disability",
+      "patterns": [],
+      "answer": "No",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^no\\b",
+        "do not have a disability"
+      ]
+    },
+    {
+      "id": "sexual_orientation",
+      "patterns": [],
+      "answer": "Decline to self-identify",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "decline|prefer not|don't wish|do not wish"
+      ]
+    },
+    {
+      "id": "transgender",
+      "patterns": [],
+      "answer": "Decline to self-identify",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "decline|prefer not|don't wish|do not wish"
+      ]
+    },
+    {
+      "id": "desired_salary",
+      "patterns": [],
+      "answer": "140000",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Text: '$140,000+'. Dropdowns: the bracket that STARTS at $140k."
+    },
+    {
+      "id": "total_comp",
+      "patterns": [],
+      "answer": "140000",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Bracket containing $140k."
+    },
+    {
+      "id": "current_salary",
+      "patterns": [],
+      "answer": "ASK_USER",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Salary-history questions are banned in Colorado; skip if optional, ask if required."
+    },
+    {
+      "id": "start_date",
+      "patterns": [],
+      "answer": "2 weeks after offer",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "notice_period",
+      "patterns": [],
+      "answer": "2 weeks",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "school",
+      "patterns": [],
+      "answer": "Example University",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Always fill even when optional ( correction)."
+    },
+    {
+      "id": "degree",
+      "patterns": [],
+      "answer": "Bachelor's Degree",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Always fill even when optional.",
+      "options_hint": [
+        "^bachelor'?s degree$",
+        "^bachelor",
+        "bachelor"
+      ]
+    },
+    {
+      "id": "field_of_study",
+      "patterns": [],
+      "answer": "Computer Science",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "^computer science$",
+        "computer and information science",
+        "computer science",
+        "computer"
+      ]
+    },
+    {
+      "id": "grad_year",
+      "patterns": [],
+      "answer": "2020",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "Only when the form REQUIRES it."
+    },
+    {
+      "id": "gpa",
+      "patterns": [],
+      "answer": "",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "years_total",
+      "patterns": [],
+      "answer": "6",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "years_software_engineering",
+      "patterns": [],
+      "answer": "6+ years in cloud infrastructure / DevOps engineering, including infrastructure-as-code (Bicep, Terraform) and .NET/C# automation tooling",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "over_18",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "privacy_ack",
+      "patterns": [],
+      "answer": "I acknowledge",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "",
+      "options_hint": [
+        "acknowledge",
+        "i agree",
+        "^yes"
+      ]
+    },
+    {
+      "id": "sms_consent",
+      "patterns": [
+        "\\bsms\\b",
+        "text messag",
+        "whatsapp"
+      ],
+      "answer": "Yes",
+      "source": "user_correction",
+      "date": "2026-11-07",
+      "note": "changed SMS/WhatsApp consent to Yes on  2026-11-07."
+    },
+    {
+      "id": "background_check",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "drug_test",
+      "patterns": [],
+      "answer": "Yes",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": ""
+    },
+    {
+      "id": "arbitration",
+      "patterns": [],
+      "answer": "USER_MUST_TICK",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "ticks arbitration agreements herself ()."
+    },
+    {
+      "id": "certify_true",
+      "patterns": [],
+      "answer": "USER_MUST_TICK",
+      "source": "setup",
+      "date": "2026-11-07",
+      "note": "ticked 's 'I consent to the terms' herself after review; keep as user tick."
+    }
+  ]
+}

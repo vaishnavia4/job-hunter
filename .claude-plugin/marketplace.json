@@ -1,0 +1,12 @@
+{
+  "name": "job-hunter-marketplace",
+  "description": "Job search, resume tailoring and application automation for Claude Code",
+  "owner": { "name": "Vaishnavi Akki" },
+  "plugins": [
+    {
+      "name": "job-hunter",
+      "source": "./",
+      "description": "Search jobs daily, tailor truthful resumes, apply with approval, track, and find skill gaps - for any role."
+    }
+  ]
+}

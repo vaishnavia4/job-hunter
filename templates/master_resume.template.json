@@ -1,0 +1,16 @@
+{
+  "_note": "SOURCE OF TRUTH. Tailored resumes may only reword, reorder, select and emphasize facts in this file. 'secondary' skills are real but lighter - use only when the JD asks. Add new facts here (with the user's confirmation) before using them anywhere.",
+  "name": "",
+  "contact": { "location": "", "phone": "", "email": "", "linkedin": "", "website": "", "work_auth": "" },
+  "headline_default": "",
+  "summary_default": "",
+  "facts": { "years_experience": "", "metrics": [] },
+  "skills": { "primary": {}, "secondary": [] },
+  "experience": [
+    { "company": "", "title": "", "location": "", "dates": "", "context": "", "bullets": [] }
+  ],
+  "projects": [],
+  "certifications": [],
+  "education": [ { "degree": "", "school": "" } ],
+  "_pending_confirmation": []
+}

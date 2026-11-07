@@ -1,0 +1,25 @@
+{
+  "_note": "Search + scoring rules. job-setup rewrites the title regexes, workday_queries, preferred locations and keyword_bonus for the user's target roles. Regexes are case-insensitive.",
+  "max_age_days": 14,
+  "min_score": 50,
+  "daily_shortlist": 20,
+  "max_per_company_per_day": 2,
+  "title_include_regex": "(analyst)",
+  "title_exclude_regex": "(intern\\b|internship|new grad|\\bjr\\b|junior|director|\\bvp\\b|vice president|\\bhead of|sales|account exec|recruit|part[- ]time|clearance|ts/sci)",
+  "title_bonus_regex": "(analyst)",
+  "seniority_penalty_regex": "(principal|distinguished|\\bstaff\\b|\\blead\\b|manager)",
+  "title_penalty_regex": "(?!x)x",
+  "workday_queries": ["analyst"],
+  "keyword_bonus": [],
+  "location": {
+    "country_regex": "(united states|\\busa?\\b|\\bu\\.s\\.|remote[- ,(]*(us|usa|united states|north america|americas)|,\\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|dc)\\b|alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|wisconsin|wyoming|san francisco|seattle|austin|boston|chicago|denver|atlanta|los angeles|nyc|bay area|palo alto|mountain view|sunnyvale|san jose|san diego|dallas|houston|phoenix|portland|raleigh|pittsburgh|philadelphia|miami|salt lake|boulder|minneapolis|detroit|nashville|charlotte)",
+    "exclude_regex": "(canada|toronto|vancouver|montreal|ontario|united kingdom|\\buk\\b|london|ireland|dublin|germany|berlin|munich|france|paris|netherlands|amsterdam|spain|madrid|barcelona|portugal|lisbon|poland|warsaw|india|bangalore|bengaluru|hyderabad|pune|chennai|singapore|japan|tokyo|australia|sydney|melbourne|brazil|sao paulo|mexico|argentina|colombia|israel|tel aviv|emea|apac|latam|europe|switzerland|zurich|sweden|stockholm|denmark|copenhagen|romania|serbia|ukraine|philippines|korea|seoul|china|taiwan|hong kong|dubai|uae|south africa|new zealand|czech|prague|hungary|budapest|estonia|finland|norway|oslo|belgium|austria|vienna|italy|milan|costa rica|chile|peru|uruguay)",
+    "remote_regex": "(remote|anywhere|distributed|work from home|wfh)",
+    "plain_remote_requires_regex": "(united states|\\bu\\.s\\.|\\busa\\b|us-based|us based)",
+    "preferred": [],
+    "remote_bonus": 15,
+    "other_bonus": 5,
+    "accept_onsite_anywhere_in_country": true
+  },
+  "blocker_patterns": []
+}

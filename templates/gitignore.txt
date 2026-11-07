@@ -1,0 +1,9 @@
+# job-hunter workspace - keep personal data out of git
+profile/credentials.json
+profile/
+applications/
+data/
+jobs/
+tracker.xlsx
+skills_gap.md
+*.png
