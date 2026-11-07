@@ -69,7 +69,13 @@ def equivalent(found, expected):
     if nonvet.search(nv) and nonvet.search(ne):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
-    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)", nv):
+    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$", nv):
+        return True
+    # degree pick lists with abbreviations only (GED/AA/BA/BS/MS...): "BS" satisfies a rule that allows Bachelor of Science
+    if re.fullmatch(r"b\.? ?s\.?(c\.?)?", nv) and "bachelor of science" in ne:
+        return True
+    # Workday's standard field-of-study option for Computer Science
+    if re.fullmatch(r"computer (and|&) information sciences?", nv) and re.match(r"computer science", ne):
         return True
     # race lists without subgroups: expected "South Asian ..." is satisfied by plain "Asian" (never "American Indian")
     if ne.startswith("south asian") and re.match(r"asian\b", nv):
@@ -78,7 +84,9 @@ def equivalent(found, expected):
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
             return True
-    if len(ne) > 3 and (ne in nv or nv in ne):
+    # containment, whole words only and never for tiny values ("BA" must not match inside "Bachelor")
+    short, long_ = sorted((nv, ne), key=len)
+    if len(short) > 3 and re.search(r"(?<!\w)" + re.escape(short) + r"(?!\w)", long_):
         return True
     rv, re_ = str(found).strip().lower(), str(expected).strip().lower()
     # amounts: "$140,000+" = "140000" = "140k"

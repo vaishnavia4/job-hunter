@@ -110,7 +110,13 @@ def main():
           ("I identify as a veteran, just not a protected veteran.", "No military service", False),
           ("Target.com/careers", "Company careers website", True), ("DRW Careers Page", "Company careers website", True),
           ("Asian (United States of America)", "South Asian", True),
-          ("American Indian or Alaska Native", "South Asian", False)]
+          ("American Indian or Alaska Native", "South Asian", False),
+          # Workday abbreviation-only lists (CrossCountry 2026-11-07)
+          ("Corporate Website", "Company careers website", True),
+          ("BS", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
+          ("BA", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
+          ("Computer and Information Science", "Computer Science", True),
+          ("Information Systems", "Computer Science", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
     print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")
