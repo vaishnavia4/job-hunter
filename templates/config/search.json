@@ -56,7 +56,7 @@
       "when": "not_citizen"
     },
     {
-      "pattern": "\\b(top secret|ts\\s*/\\s*sci|ts-sci|sci eligib\\w*|polygraph)\\b",
+      "pattern": "\\b(top secret|ts\\s*/\\s*sci|ts-sci|sci eligib\\w*|(full[- ]scope|lifestyle|ci|counter-?intelligence) polygraph)\\b",
       "reason": "security clearance",
       "when": "no_clearance"
     },

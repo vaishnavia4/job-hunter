@@ -60,7 +60,7 @@ def main():
         folder = ws.apps / "Acme_Engineer"
         folder.mkdir()
         save_json(folder / "job.json", {"company": "Acme"})
-        check(tailor_level(ws, folder) == "medium", "default level is medium")
+        check(tailor_level(ws, folder) == "auto", "default level is auto (standard process)")
         save_json(ws.profile_dir / "profile.json", {"tailoring": {"default_level": "low"}})
         check(tailor_level(ws, folder) == "low", "profile tailoring.default_level is used")
         set_tailor_level(folder, "high")

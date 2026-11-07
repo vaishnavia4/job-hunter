@@ -224,8 +224,10 @@ def _flatten(r):
 # low    : headline, summary, skill order + at most 4 reworded/swapped bullets (easy for the user to own)
 # medium : up to 12 bullets reworded/reordered with JD keywords (default)
 # high   : every bullet may be rewritten around the JD; facts, numbers and skills must still come from the master
-LEVELS = {"low": 4, "medium": 12, "high": None}
+LEVELS = {"auto": None, "low": 4, "medium": 12, "high": None}
 LEVEL_GUIDE = {
+    "auto": "Standard tailoring (the workspace's normal rules in CLAUDE.md / the tailor-resume skill); no extra budget. "
+            "Used for automated batches; low/medium/high apply only when the user names a level for a job.",
     "low": "Change only the headline, summary and skill order, plus at most 4 bullets (swap in a more relevant master bullet "
            "or lightly reword with JD keywords). Keep every other bullet word-for-word from the master resume.",
     "medium": "Reorder and reword up to 12 bullets with the JD's vocabulary, drop irrelevant skill categories; keep each "
@@ -236,12 +238,12 @@ LEVEL_GUIDE = {
 
 
 def tailor_level(ws, folder, override=None):
-    """Level for a folder: explicit override > job.json 'tailor_level' > profile tailoring.default_level > medium."""
+    """Level for a folder: explicit override > job.json 'tailor_level' > profile tailoring.default_level > auto."""
     if override:
         lvl = override
     else:
         job = load_json(Path(folder) / "job.json", {}) or {}
-        lvl = job.get("tailor_level") or ((ws.profile() or {}).get("tailoring") or {}).get("default_level") or "medium"
+        lvl = job.get("tailor_level") or ((ws.profile() or {}).get("tailoring") or {}).get("default_level") or "auto"
     lvl = str(lvl).lower()
     if lvl not in LEVELS:
         raise ValueError(f"tailor level must be one of {list(LEVELS)}, got {lvl!r}")

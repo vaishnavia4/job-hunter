@@ -4,6 +4,7 @@ Sources: Greenhouse, Lever, Ashby, SmartRecruiters, Workday (public CXS API), Am
 Nothing here is person-specific: titles, locations, skills, companies and blockers all come from the workspace.
 """
 import html
+import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -223,10 +224,89 @@ def fetch_remotive(category, cfg):
                "description": strip_html(j.get("description", "")), "salary_text": j.get("salary", "")}
 
 
+# ---------------------------------------------------------------- government: NEOGOV / GovernmentJobs.com
+NEOGOV = "https://www.governmentjobs.com"
+_PER = {"year": 1, "annually": 1, "annual": 1, "month": 12, "monthly": 12, "hour": 2080, "hourly": 2080,
+        "biweekly": 26, "week": 52, "weekly": 52}
+
+
+def _annual(lo, hi, unit):
+    """Monthly/hourly government pay -> annual '$X - $Y' so the salary floor works."""
+    k = _PER.get(str(unit or "year").lower().strip(), 1)
+    try:
+        lo, hi = float(lo) * k, float(hi) * k
+    except (TypeError, ValueError):
+        return ""
+    return f"${lo:,.0f} - ${hi:,.0f} per year"
+
+
+def fetch_neogov(agency, cfg):
+    """token = GovernmentJobs.com agency slug (e.g. 'colorado' from governmentjobs.com/careers/colorado).
+    Uses NEOGOV's public XML feed (/SearchEngine/JobsFeed?agency=...): every open posting in one request,
+    with title, department, pay + interval and dates. Full descriptions come from neogov_detail (title matches only)."""
+    r = requests.get(f"{NEOGOV}/SearchEngine/JobsFeed", params={"agency": agency}, headers=UA, timeout=60)
+    r.raise_for_status()
+    feed = r.content.decode("utf-8-sig", "replace")
+    tag = lambda blk, name: html.unescape((re.search(rf"<(?:joblisting:)?{name}>(.*?)</(?:joblisting:)?{name}>", blk, re.S) or [None, ""])[1]).strip()
+    for blk in re.findall(r"<item\b.*?</item>", feed, re.S):
+        jid = tag(blk, "jobId")
+        if not jid:
+            continue
+        url = f"{NEOGOV}/careers/{agency}/jobs/{jid}"
+        loc = ", ".join(x for x in (tag(blk, "city") or tag(blk, "location"), tag(blk, "state")) if x)
+        dept = tag(blk, "department") or tag(blk, "agency")
+        posted = tag(blk, "pubDate")
+        try:
+            posted = datetime.strptime(posted, "%a, %d %b %Y %H:%M:%S GMT").replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            posted = None
+        job = {"job_id": f"ng:{agency}:{jid}", "ats": "neogov", "company": dept or agency.title(),
+               "title": tag(blk, "title"), "location": loc, "url": url, "apply_url": url, "posted": posted,
+               "description": "\n\n".join(strip_html(tag(blk, k)) for k in
+                                          ("description", "examplesofduties", "qualifications", "supplementalinformation")
+                                          if tag(blk, k)),
+               "salary_text": _annual(tag(blk, "minimumSalary"), tag(blk, "maximumSalary"), tag(blk, "salaryInterval"))
+               if tag(blk, "maximumSalary") else ""}
+        close = tag(blk, "advertiseToDateTimeUTC")[:16]
+        try:
+            if datetime.strptime(close, "%a, %d %b %Y") < datetime.utcnow():
+                job["age_override"] = 10 ** 6  # closing date passed
+        except ValueError:
+            pass
+        yield job
+
+
+def neogov_detail(job):
+    """Job page JSON-LD (schema.org JobPosting): full description, posting/closing dates, pay."""
+    try:
+        t = requests.get(job["_detail"], headers=UA, timeout=TIMEOUT).text
+        for blk in re.findall(r'<script type="application/ld\+json">(.*?)</script>', t, re.S):
+            try:
+                d = json.loads(blk)
+            except ValueError:
+                continue
+            if d.get("@type") != "JobPosting":
+                continue
+            job["description"] = strip_html(html.unescape(d.get("description", "")))
+            job["posted"] = d.get("datePosted")
+            org = (d.get("hiringOrganization") or {}).get("name")
+            if org and org not in job["company"]:
+                job["company"] = f"{org} - {job['company']}"
+            v = ((d.get("baseSalary") or {}).get("value") or {})
+            if v.get("maxValue"):
+                job["salary_text"] = _annual(v.get("minValue"), v.get("maxValue"), v.get("unitText"))
+            close = d.get("validThrough")
+            if close and iso_age_days(close) is not None and iso_age_days(close) > 0:
+                job["age_override"] = 10 ** 6  # closing date passed -> treated as expired
+            break
+    except Exception:
+        pass
+
+
 FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever, "ashby": fetch_ashby,
             "smartrecruiters": fetch_smartrecruiters, "workday": fetch_workday, "amazon": fetch_amazon,
-            "remotive": fetch_remotive}
-DETAIL_FETCHERS = {"smartrecruiters": smartrecruiters_detail, "workday": workday_detail}
+            "remotive": fetch_remotive, "neogov": fetch_neogov}
+DETAIL_FETCHERS = {"smartrecruiters": smartrecruiters_detail, "workday": workday_detail}  # neogov feed already has full text
 
 
 # ---------------------------------------------------------------- vocabulary
