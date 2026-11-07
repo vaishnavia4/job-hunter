@@ -63,6 +63,11 @@ def equivalent(found, expected):
     # decline variants: "I don't wish to answer" = "Decline to self-identify" = "Prefer not to say"
     if DECLINE_RX.search(nv) and DECLINE_RX.search(ne):
         return True
+    # non-veteran variants: "I am not a protected veteran" = "I am not a veteran" = "No military service"
+    # ("I identify as a veteran, just not a protected veteran" is NOT a match: it starts with "I identify as")
+    nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served")
+    if nonvet.search(nv) and nonvet.search(ne):
+        return True
     # yes/no prefixes: "No, I do not have a disability..." = "No"
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):

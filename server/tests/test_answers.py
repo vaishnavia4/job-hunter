@@ -104,7 +104,10 @@ def main():
           ("Asian: East Asian", "Asian: South Asian", False),
           # amounts and range options (Greenhouse salary text, years-of-experience dropdowns)
           ("$140,000+", "140000", True), ("140k", "140000", True), ("$150,000", "140000", False),
-          ("5-10", "6", True), ("0-5", "6", False), ("10+", "6", False), ("15+ years", "16", True)]
+          ("5-10", "6", True), ("0-5", "6", False), ("10+", "6", False), ("15+ years", "16", True),
+          # non-veteran wordings are equivalent; "identify as a veteran, just not protected" is not
+          ("I am not a protected veteran", "No military service", True), ("I am not a veteran.", "No military service", True),
+          ("I identify as a veteran, just not a protected veteran.", "No military service", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
     print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")
