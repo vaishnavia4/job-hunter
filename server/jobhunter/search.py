@@ -466,6 +466,11 @@ class Scorer:
         loc_l = loc.lower()
         is_remote = bool(self.remote.search(loc_l))
         in_country = bool(self.country.search(loc_l))
+        if in_country and self.non_country.search(loc_l):
+            # 'Toronto, Ontario, CA' must not pass as California: every location part that looks domestic
+            # must not also name a foreign place; keep 'San Francisco | Toronto' and 'United States | Canada'.
+            parts = [p for p in re.split(r"\s*[|;/]\s*|\s{2,}", loc_l) if p.strip()]
+            in_country = any(self.country.search(p) and not self.non_country.search(p) for p in parts)
         if not in_country:
             if self.non_country.search(loc_l) or not is_remote or not self.country_mention.search(desc):
                 return None, "location"

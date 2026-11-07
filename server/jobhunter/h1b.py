@@ -31,6 +31,11 @@ ALIASES = {
     "national renewable energy laboratory": "Alliance for Sustainable Energy LLC",
     "intermountain health": "IHC Health Services Inc DBA Intermountain Healthcare",
     "ucar": "Univ Corp for Atmospheric Research",
+    "amazon": "Amazon.com Services LLC",
+    "aws": "Amazon Web Services Inc",
+    "tiaa": "Teachers Insurance Annuity Assn TIAA",
+    "meta": "Meta Platforms Inc",
+    "facebook": "Meta Platforms Inc",
     "ncar": "Univ Corp for Atmospheric Research",
 }
 _ABBR = [(r"\bUNIVERSITY\b", "UNIV"), (r"\bHEALTHCARE\b", "HEALTH CARE"), (r"\bHOSPITALS?\b", "HOSP"),
