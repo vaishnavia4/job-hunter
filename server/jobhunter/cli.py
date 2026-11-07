@@ -153,7 +153,7 @@ def main(argv=None):
         from . import mail_verify
         r = mail_verify.find_verification(ws, a.minutes, a.host, a.sender, a.wait) or {"found": False}
         if a.save and r.get("value"):
-            Path(a.save).write_text(r["value"], encoding="utf-8")
+            __import__("pathlib").Path(a.save).write_text(r["value"], encoding="utf-8")
             kind = "reset" if "passwordreset" in r["value"] else ("activation" if r.get("type") == "link" else r.get("type"))
             r = {**{k: v for k, v in r.items() if k != "value"}, "saved_to": a.save, "kind": kind}
         _p(r)
