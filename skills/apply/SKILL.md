@@ -117,3 +117,9 @@ The token-free filler encodes all of this: `python -m jobhunter.fill --workspace
 
 ## SmartRecruiters / company sites
 Same universal rules; snapshot the form, map fields by label, screenshot before submit.
+
+
+## Consent boxes (terms, account creation, legal attestations)
+
+By default the filler never ticks consent boxes: it fills everything else and reports `user must tick: <label>`. A user who consents for every application can set `consent_policy` in `profile/profile.json` (`terms_and_conditions`, `account_creation_agreement`, `legal_attestations`: `ask` or `preauthorized`); the filler then ticks those boxes and lists each one in the report. Record the user's own words when they grant it. If the host's safety layer still blocks a click, hand the box to the user and never work around the block.
+

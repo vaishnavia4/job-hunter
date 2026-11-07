@@ -21,6 +21,29 @@ MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oc
 AID = lambda a: f'[data-automation-id="{a}"]'
 NOT_HONEYPOT = ':not([data-automation-id="beecatcher"])'  # hidden anti-bot input: never fill it
 LEGAL_RX = re.compile(r"agree|terms|conditions|arbitrat|certif|acknowledg|consent|privacy", re.I)
+ATTEST_RX = re.compile(r"arbitrat|non[- ]?disclosure|\bnda\b|certif|truthful|true and complete", re.I)
+
+
+def consent_kind(label):
+    """Which profile consent_policy key governs a consent checkbox label."""
+    if re.search(r"creat\w* (this |an )?account", label or "", re.I):
+        return "account_creation_agreement"
+    return "legal_attestations" if ATTEST_RX.search(label or "") else "terms_and_conditions"
+
+
+def _consent_preauthorized(ctx, kind):
+    """profile.json consent_policy.<kind> == 'preauthorized' (or 'preauthorized_report_each'). Default: ask the user."""
+    pol = (getattr(ctx, "profile", None) or {}).get("consent_policy") or {}
+    return str(pol.get(kind, "ask")).startswith("preauthorized")
+
+
+def _consent_box(ctx, cb, label):
+    """Tick a consent box only under the user's recorded standing consent; otherwise leave it for them."""
+    if _consent_preauthorized(ctx, consent_kind(label)):
+        cb.check(force=True)
+        ctx.fill_record(label[:80], "ticked (user's standing consent in profile consent_policy)")
+    else:
+        ctx.problem(f"user must tick: {label}")
 MAINT_RX = re.compile(r"currently unavailable|undergoing (scheduled )?maintenance|scheduled maintenance", re.I)
 REJECT_RX = re.compile(r"wrong email|wrong password|incorrect (email|password)|email (address )?or password|account (is |has been )?locked|"
                        r"not recognized|invalid (email|password|credentials|username)|could not sign you in|sign[- ]in failed", re.I)
@@ -405,7 +428,10 @@ def _create(ctx, email, pw):
         return "error"
     box = _visible(page, [AID("createAccountCheckbox")])
     if box is not None and not box.is_checked():
-        return "needs_user_checkbox"  # consent belongs to the user: fields are filled, they tick and submit
+        if not _consent_preauthorized(ctx, "account_creation_agreement"):
+            return "needs_user_checkbox"  # consent belongs to the user: fields are filled, they tick and submit
+        box.check(force=True)
+        ctx.fill_record("Create account agreement", "ticked (user's standing consent in profile consent_policy)")
     btn = _visible(page, [AID("createAccountSubmitButton"), f'{AID("click_filter")}[aria-label="Create Account"]'])
     if not btn:
         ctx.problem("Workday: no Create Account submit button")
@@ -673,7 +699,7 @@ def _fill_boxes(ctx):
                 C.fill_choice_group(ctx, b, label)
             elif b.locator('input[type="checkbox"]').count():
                 if LEGAL_RX.search(label) and not b.locator("input[type=checkbox]").first.is_checked():
-                    ctx.problem(f"user must tick: {label}")
+                    _consent_box(ctx, b.locator("input[type=checkbox]").first, label)
                 else:
                     C.handle_checkbox(ctx, b.locator("input[type=checkbox]").first, label)
             else:
@@ -698,7 +724,7 @@ def _fill_boxes(ctx):
         try:
             t = C.clean(cb.evaluate("e=>(e.closest('label')||e.parentElement.parentElement).innerText"))
             if LEGAL_RX.search(t) and not cb.is_checked():
-                ctx.problem(f"user must tick: {t[:90]}")
+                _consent_box(ctx, cb, t[:90])
         except Exception:
             pass
 

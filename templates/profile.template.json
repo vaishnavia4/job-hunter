@@ -87,5 +87,11 @@
   "tailoring": {
     "default_level": "medium",
     "_levels": "low = headline/summary/skills + max 4 bullets changed; medium = up to 12 bullets reworded; high = everything rewritten around the JD (still only true facts)"
+  },
+  "consent_policy": {
+    "terms_and_conditions": "ask",
+    "account_creation_agreement": "ask",
+    "legal_attestations": "ask",
+    "_help": "ask = the form filler leaves the box for you. preauthorized = it ticks the box for you and reports it (only set this if you consent for every application). legal_attestations covers NDA / arbitration / I-certify boxes."
   }
 }

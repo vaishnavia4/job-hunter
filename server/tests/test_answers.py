@@ -107,7 +107,10 @@ def main():
           ("5-10", "6", True), ("0-5", "6", False), ("10+", "6", False), ("15+ years", "16", True),
           # non-veteran wordings are equivalent; "identify as a veteran, just not protected" is not
           ("I am not a protected veteran", "No military service", True), ("I am not a veteran.", "No military service", True),
-          ("I identify as a veteran, just not a protected veteran.", "No military service", False)]
+          ("I identify as a veteran, just not a protected veteran.", "No military service", False),
+          ("Target.com/careers", "Company careers website", True), ("DRW Careers Page", "Company careers website", True),
+          ("Asian (United States of America)", "South Asian", True),
+          ("American Indian or Alaska Native", "South Asian", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
     print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")

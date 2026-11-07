@@ -68,6 +68,12 @@ def equivalent(found, expected):
     nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served")
     if nonvet.search(nv) and nonvet.search(ne):
         return True
+    # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
+    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)", nv):
+        return True
+    # race lists without subgroups: expected "South Asian ..." is satisfied by plain "Asian" (never "American Indian")
+    if ne.startswith("south asian") and re.match(r"asian\b", nv):
+        return True
     # yes/no prefixes: "No, I do not have a disability..." = "No"
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
