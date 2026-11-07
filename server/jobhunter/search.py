@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from .workspace import Workspace, save_json, today
+from .workspace import Workspace, load_json, save_json, today
 
 UA = {"User-Agent": "Mozilla/5.0 (job-hunter personal job search)"}
 TIMEOUT = 25
@@ -253,6 +253,74 @@ def blockers_for(ws: Workspace, cfg):
     return [re.compile(p, re.I) for p in dict.fromkeys(pats)]
 
 
+def hard_skip_rules(ws: Workspace, cfg):
+    """Free pre-screen rules from config/search.json -> (title_rules, jd_rules), each [(regex, reason)].
+
+    A rule may carry "when": needs_sponsorship | not_citizen | no_clearance, so it only applies when the
+    profile's work authorization makes it a real blocker. Rules without "when" always apply."""
+    wa = (ws.profile() or {}).get("work_authorization", {}) or {}
+    flags = {
+        "needs_sponsorship": str(wa.get("requires_sponsorship_now_or_future", "")).lower().startswith("y"),
+        "not_citizen": str(wa.get("us_citizen", "")).lower().startswith("n"),
+        "no_clearance": str(wa.get("security_clearance", "none")).lower() in ("", "none", "no"),
+    }
+
+    def build(key):
+        out = []
+        for e in cfg.get(key, []) or []:
+            if e.get("when") and not flags.get(e["when"], False):
+                continue
+            try:
+                out.append((re.compile(e["pattern"], re.I), e["reason"]))
+            except re.error:
+                continue
+        return out
+    return build("title_hard_skip"), build("hard_skip_patterns")
+
+
+def hard_skip_reason(rules, title, desc):
+    """Reason string if a title/JD rule matches, else None. Records the label and the matched text."""
+    title_rules, jd_rules = rules
+    for rx, reason in title_rules:
+        m = rx.search(title or "")
+        if m:
+            return f"{reason} [title: '{m.group(0)}']"
+    for rx, reason in jd_rules:
+        m = rx.search(desc or "")
+        if m:
+            return f"{reason} ['{m.group(0)[:70]}']"
+    return None
+
+
+def reject_key(why):
+    """Counter key for a rejection reason; hard skips keep their label so the counter shows why."""
+    return why.split(" [")[0] if why.startswith("hard_skip") else why
+
+
+def prescreen(ws: Workspace, dry_run=False, statuses=("new",)):
+    """Re-run the free hard-skip rules over tracker rows (default status 'new') using cached jobs/jd/*.json
+    descriptions; matches become 'skipped' with the reason in notes. No AI tokens."""
+    rules = hard_skip_rules(ws, ws.cfg("search", {}))
+    rows = ws.load_tracker()
+    hits, by_reason = [], {}
+    for r in rows:
+        if r["status"] not in statuses:
+            continue
+        p = ws.jd / (r["job_id"].replace(":", "_") + ".json")
+        desc = (load_json(p, {}) or {}).get("description", "") if p.exists() else ""
+        why = hard_skip_reason(rules, r["title"], desc)
+        if why:
+            hits.append({"job_id": r["job_id"], "company": r["company"], "title": r["title"], "reason": why})
+            by_reason[why.split(" [")[0]] = by_reason.get(why.split(" [")[0], 0) + 1
+            if not dry_run:
+                r["status"] = "skipped"
+                r["notes"] = "; ".join(x for x in (r.get("notes", ""), f"prescreen: {why}") if x)[:400]
+    if hits and not dry_run:
+        ws.save_tracker(rows)
+        ws.export_xlsx()
+    return {"dry_run": dry_run, "skipped": len(hits), "by_reason": by_reason, "jobs": hits}
+
+
 # ---------------------------------------------------------------- scoring
 class Scorer:
     def __init__(self, ws: Workspace):
@@ -272,6 +340,7 @@ class Scorer:
         self.accept_onsite = loc.get("accept_onsite_anywhere_in_country", True)
         self.kw_bonus = [(re.compile(k["regex"], re.I), k.get("title", 0), k.get("desc", 0)) for k in c.get("keyword_bonus", [])]
         self.blockers = blockers_for(ws, c)
+        self.hard_rules = hard_skip_rules(ws, c)
         self.vocab = load_vocab(ws)
         prof = ws.profile()
         self.floor = (prof.get("job_preferences") or {}).get("salary_floor") or 0
@@ -290,6 +359,9 @@ class Scorer:
         reasons = []
         if any(e and e in job["company"].lower() for e in self.excluded):
             return None, "excluded company"
+        hs = hard_skip_reason(self.hard_rules, title, desc)
+        if hs:
+            return None, f"hard_skip: {hs}"
         if not self.title_ok(title):
             return None, "title"
         loc_l = loc.lower()
@@ -398,7 +470,7 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
         if res:
             scored.append(res)
         else:
-            rejects[why] = rejects.get(why, 0) + 1
+            rejects[reject_key(why)] = rejects.get(reject_key(why), 0) + 1
     if preferred_location:  # keep only the profile's preferred locations or remote (country already checked by score)
         scored = [j for j in scored if scorer.in_preferred_or_remote(j.get("location") or "")]
     best = {}

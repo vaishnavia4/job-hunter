@@ -9,7 +9,9 @@
   "title_bonus_regex": "(analyst)",
   "seniority_penalty_regex": "(principal|distinguished|\\bstaff\\b|\\blead\\b|manager)",
   "title_penalty_regex": "(?!x)x",
-  "workday_queries": ["analyst"],
+  "workday_queries": [
+    "analyst"
+  ],
   "keyword_bonus": [],
   "location": {
     "country_regex": "(united states|\\busa?\\b|\\bu\\.s\\.|remote[- ,(]*(us|usa|united states|north america|americas)|,\\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|dc)\\b|alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|wisconsin|wyoming|san francisco|seattle|austin|boston|chicago|denver|atlanta|los angeles|nyc|bay area|palo alto|mountain view|sunnyvale|san jose|san diego|dallas|houston|phoenix|portland|raleigh|pittsburgh|philadelphia|miami|salt lake|boulder|minneapolis|detroit|nashville|charlotte)",
@@ -21,5 +23,104 @@
     "other_bonus": 5,
     "accept_onsite_anywhere_in_country": true
   },
-  "blocker_patterns": []
+  "blocker_patterns": [],
+  "hard_skip_patterns": [
+    {
+      "pattern": "\\bitar\\b",
+      "reason": "ITAR",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "export[- ]control(led)?\\b[^.\\n]{0,200}(u\\.?s\\.? (persons?|citizens?)|united states (persons?|citizens?)|permanent residents?|green card)",
+      "reason": "export control / US persons",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "\\bu\\.?s\\.? (persons?)\\b",
+      "reason": "US person required",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "\\bunited states persons?\\b",
+      "reason": "US person required",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "\\b(u\\.?s\\.?|united states) citizen(s|ship)?\\b",
+      "reason": "US citizenship required",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "\\bcitizenship (is |will be )?(required|mandatory)",
+      "reason": "US citizenship required",
+      "when": "not_citizen"
+    },
+    {
+      "pattern": "\\b(top secret|ts\\s*/\\s*sci|ts-sci|sci eligib\\w*|polygraph)\\b",
+      "reason": "security clearance",
+      "when": "no_clearance"
+    },
+    {
+      "pattern": "\\bpublic trust\\b",
+      "reason": "security clearance (public trust)",
+      "when": "no_clearance"
+    },
+    {
+      "pattern": "\\b(secret|security|government|dod|doe|active|interim|federal) clearance\\b",
+      "reason": "security clearance",
+      "when": "no_clearance"
+    },
+    {
+      "pattern": "\\bclearance (is )?(required|needed|eligib\\w*|level)",
+      "reason": "security clearance",
+      "when": "no_clearance"
+    },
+    {
+      "pattern": "(obtain|hold|maintain|possess|eligible for|ability to get)\\b[^.\\n]{0,40}\\b(security |secret |government |top secret )?clearance",
+      "reason": "security clearance (ability to obtain)",
+      "when": "no_clearance"
+    },
+    {
+      "pattern": "\\b(unable|not able|cannot|can ?not|can'?t|will not|won'?t|does not|do not|doesn'?t|don'?t|is not|are not|not)\\b[^.\\n]{0,40}\\bsponsor",
+      "reason": "no visa sponsorship",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "\\b(no|without|not offer(ing)?|not provid(e|ing)) (visa |h-?1b |employment |immigration |work )?sponsorship",
+      "reason": "no visa sponsorship",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "sponsorship (is |are )?(not|unavailable)\\b",
+      "reason": "no visa sponsorship",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "authorized to work[^.\\n]{0,80}without[^.\\n]{0,40}sponsorship",
+      "reason": "must work without sponsorship",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "(not|never|without) (require|requiring|needing|need)[^.\\n]{0,30}sponsorship",
+      "reason": "must work without sponsorship",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "h-?1b[^.\\n]{0,80}\\b(not|no|unable|cannot|n't)\\b",
+      "reason": "no H-1B",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "\\b(not|no|unable|cannot|n't)\\b[^.\\n]{0,60}\\bh-?1b",
+      "reason": "no H-1B",
+      "when": "needs_sponsorship"
+    },
+    {
+      "pattern": "(green card|permanent residen(t|cy))[^.\\n]{0,30}(only|required)",
+      "reason": "green card / citizen only",
+      "when": "not_citizen"
+    }
+  ],
+  "title_hard_skip": [],
+  "_hard_skip_note": "Free pre-screen (no AI tokens): hard_skip_patterns are matched against the job description, title_hard_skip against the title; each has a reason label that is recorded. 'when' gates a pattern on the profile: needs_sponsorship (work_authorization.requires_sponsorship_now_or_future = yes), not_citizen (us_citizen = no), no_clearance (security_clearance none). Omit 'when' to always apply. Add title patterns for roles you never want, e.g. {\"pattern\": \"frontend\", \"reason\": \"off-target: frontend\"}."
 }

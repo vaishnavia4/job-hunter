@@ -6,6 +6,7 @@
   alerts [--days N] [--dry-run]  read LinkedIn/Jobright alert emails (Gmail App Password)
   add-job --url URL [--title T --company C --location L --description-file F]
   portfolio [--out DIR] [--no-pdf]  build public portfolio data, site files, resume PDF, profile README
+  prescreen [--dry-run]        free rule-based skip of 'new' tracker jobs (ITAR, clearance, no sponsorship, off-target titles)
   archive-skipped              move skipped application folders to applications/_skipped
   validate-boards              check which company boards respond
   list [status]                list tracked jobs
@@ -42,6 +43,7 @@ def main(argv=None):
     s = sub.add_parser("search"); s.add_argument("--limit", type=int); s.add_argument("--analyze-only", action="store_true"); s.add_argument("--dry-run", action="store_true"); s.add_argument("--exclude-ats", default=""); s.add_argument("--preferred-location", action="store_true")
     al = sub.add_parser("alerts"); al.add_argument("--days", type=int); al.add_argument("--dry-run", action="store_true")
     aj = sub.add_parser("add-job"); aj.add_argument("--url", required=True); aj.add_argument("--title", default=""); aj.add_argument("--company", default=""); aj.add_argument("--location", default=""); aj.add_argument("--description-file")
+    ps = sub.add_parser("prescreen"); ps.add_argument("--dry-run", action="store_true")
     sub.add_parser("archive-skipped")
     pf = sub.add_parser("portfolio"); pf.add_argument("--out", default="portfolio"); pf.add_argument("--no-pdf", action="store_true")
     sub.add_parser("validate-boards")
@@ -85,6 +87,8 @@ def main(argv=None):
         _p(intake.add_job(ws, a.url, a.title, a.company, a.location, desc))
     elif a.cmd == "portfolio":
         _p(portfolio.build_portfolio(ws, a.out, resume_pdf=not a.no_pdf))
+    elif a.cmd == "prescreen":
+        _p(search.prescreen(ws, dry_run=a.dry_run))
     elif a.cmd == "archive-skipped":
         _p({"moved": intake.archive_skipped(ws)})
     elif a.cmd == "validate-boards":

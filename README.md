@@ -52,11 +52,12 @@ Optional daily schedule (Windows Task Scheduler / cron):
 
 Skills: `job-setup`, `tailor-resume`, `apply`, `job-batch`, `skills-gap`, `portfolio-github`.
 MCP tools (`mcp__plugin_job-hunter_jobs__*`): `init_workspace`, `extract_resume_text`, `search_jobs`, `validate_boards`, `list_jobs`, `prepare_application`, `build_resume`, `update_status`, `sync_decisions`, `skills_gap_report`, `stats`, `read_job_alerts`, `add_job`, `archive_skipped`, `build_portfolio`, `lookup_answer`, `record_answer`, `verify_form`.
-CLI (same engine): `cd server && python -m jobhunter --workspace <folder> <init|extract|search|alerts|add-job|archive-skipped|portfolio|list|prepare|build|set|sync|skills-gap|stats>`.
+CLI (same engine): `cd server && python -m jobhunter --workspace <folder> <init|extract|search|alerts|prescreen|add-job|archive-skipped|portfolio|list|prepare|build|set|sync|skills-gap|stats>`.
 
 New in 0.2.0 (CLI flags):
 - `search --exclude-ats workday,amazon` skips boards; `search --preferred-location` keeps only jobs in your profile's preferred locations (`config/search.json` > `location.preferred`) or remote. Add `"amazon": ["remote", "<your state or city>"]` to `config/companies.json` to search amazon.jobs; the search terms come from your target titles.
 - `alerts [--days N] [--dry-run]` reads job-alert emails (see below).
+- `prescreen [--dry-run]` free rule-based skip (no AI tokens) of `new` tracker jobs using `hard_skip_patterns` / `title_hard_skip` in `config/search.json` (ITAR, clearance, citizenship, no sponsorship, off-target titles); reasons go to the tracker notes. The same rules run inside `search` and `alerts` before anything is scored.
 - `add-job --url URL [--title T --company C --location L --description-file F]` adds a job you found yourself (status `new`).
 - `archive-skipped` moves folders of skipped jobs to `applications/_skipped`.
 - `portfolio [--out DIR] [--no-pdf]` builds the public portfolio files.

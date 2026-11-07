@@ -18,14 +18,15 @@ from urllib.parse import unquote
 
 import requests
 
-from .search import Scorer, strip_html
+from .search import Scorer, hard_skip_reason, reject_key, strip_html
 from .workspace import Workspace, load_json, save_json, today
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"}
 SENDERS = ["jobalerts-noreply@linkedin.com", "jobs-noreply@linkedin.com", "jobs-listings@linkedin.com",
            "linkedin.com", "jobright.ai"]
 LI_ID = re.compile(r"linkedin\.com/(?:comm/)?jobs/view/(\d{6,})")
-JR_LINK = re.compile(r"https://jobright\.ai/jobs/info/[A-Za-z0-9]+")
+JR_ANCHOR = re.compile(r'<a\b[^>]*href="https://jobright\.ai/jobs/info/([A-Za-z0-9]+)[^"]*"[^>]*>(.*?)</a>', re.S | re.I)
+JR_SUBJECT = re.compile(r"^(?P<company>.+?) just posted an? (?P<pct>\d+)% match (?P<title>.+?) role\b", re.S)
 MAX_LINKEDIN_FETCH = 40
 
 
@@ -45,6 +46,51 @@ def _body(msg):
             except Exception:
                 pass
     return "\n".join(parts)
+
+
+def _clean(t):
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", t)).replace("​", "")).strip()
+
+
+def _toks(t):
+    return set(re.findall(r"[a-z0-9#+]+", t.lower()))
+
+
+def parse_jobright(subject, body):
+    """Jobright email -> [{company, title, link, pct}], one entry per distinct job.
+
+    A Jobright email holds several job cards, each with its own /jobs/info/<id> link, so grabbing the
+    first link in the email reports the wrong job. Cards are matched by link id and their anchor text.
+    'X just posted a N% match T role' emails: only the card whose title matches the subject (its main job).
+    Digest emails: every card (company = start of the card text)."""
+    subject = _clean(subject)
+    cards = {}  # id -> best anchor text (longest, ignoring APPLY NOW / empty)
+    for jid, inner in JR_ANCHOR.findall(body):
+        t = _clean(inner)
+        if t and not t.upper().startswith("APPLY NOW") and len(t) > len(cards.get(jid, "")):
+            cards[jid] = t
+    link = lambda jid: f"https://jobright.ai/jobs/info/{jid}"
+    m = JR_SUBJECT.match(subject)
+    if m:
+        want = _toks(m["title"])
+        best, score = None, 0.0
+        for jid, t in cards.items():
+            tk = _toks(t)
+            sc = len(want & tk) / max(1, len(want | tk))
+            if sc > score:
+                best, score = jid, sc
+        if best is None and cards:
+            best = next(iter(cards))  # first job card as fallback
+        if best is None:
+            return []
+        return [{"company": m["company"].strip(), "title": m["title"].strip(), "link": link(best), "pct": int(m["pct"])}]
+    out = []
+    for jid, t in cards.items():  # digest: "Company  Industry . Stage  91%  Title ..."
+        parts = re.split(r"\s{2,}|\s[·•]\s", t)
+        pct = re.search(r"(\d+)%", t)
+        title = re.sub(r"^.*?\d+%\s*", "", t)[:100]
+        out.append({"company": parts[0][:60], "title": title, "link": link(jid), "pct": int(pct[1]) if pct else None})
+    return out
 
 
 def fetch_emails(creds, since):
@@ -108,7 +154,7 @@ def read_alerts(ws: Workspace, days=None, dry_run=False, log=print):
     for m in mails:
         li_ids += LI_ID.findall(m["body"])
         if "jobright" in m["from"].lower():
-            jr.append({"subject": m["subject"], "links": sorted(set(JR_LINK.findall(m["body"])))})
+            jr.append({"subject": _clean(m["subject"]), "jobs": parse_jobright(m["subject"], m["body"])})
     li_ids = list(dict.fromkeys(li_ids))
     tracker = ws.load_tracker()
     known = {r["job_id"] for r in tracker}
@@ -132,13 +178,26 @@ def read_alerts(ws: Workspace, days=None, dry_run=False, log=print):
             continue
         res, why = scorer.score(job)
         if not res:
-            k = why.split(":")[0]
+            k = reject_key(why)
             rejected[k] = rejected.get(k, 0) + 1
             continue
         added.append(res)
     added.sort(key=lambda j: -j["score"])
+    seen_jr, jr_leads = set(), []
+    for e in jr:
+        for j in e["jobs"]:
+            jid = j["link"].rsplit("/", 1)[1]
+            if jid in seen_jr:
+                continue
+            seen_jr.add(jid)
+            hs = hard_skip_reason(scorer.hard_rules, j["title"], "")
+            if hs:
+                k = reject_key("hard_skip: " + hs)
+                rejected[k] = rejected.get(k, 0) + 1
+                continue
+            jr_leads.append(j)
     summary = {"emails": len(mails), "linkedin_links": len(li_ids), "jobright_emails": len(jr), "filtered_out": rejected,
-               "jobright_leads": [{"subject": e["subject"][:110], "links": e["links"][:3]} for e in jr[-10:]],
+               "jobright_leads": jr_leads[-40:],
                "matches": [{"score": j["score"], "company": j["company"], "title": j["title"], "location": j["location"],
                             "apply": "company site" if "linkedin.com" not in j["apply_url"] else "LinkedIn page (find the company site)"}
                            for j in added]}
@@ -152,6 +211,6 @@ def read_alerts(ws: Workspace, days=None, dry_run=False, log=print):
                         "flags": (j.get("flags", "") + "; from LinkedIn alert").strip("; "), "status": "new"})
     ws.save_tracker(tracker)
     ws.export_xlsx()
-    save_json(state_path, {"last_run": datetime.now().isoformat(timespec="seconds"), "jobright_leads": jr[-30:]})
+    save_json(state_path, {"last_run": datetime.now().isoformat(timespec="seconds"), "jobright_leads": jr_leads[-60:]})
     summary["added"] = len(added)
     return summary
