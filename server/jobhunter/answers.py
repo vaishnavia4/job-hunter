@@ -45,6 +45,14 @@ def _canon(s):
     return n
 
 
+def _amount(s):
+    """'$140,000+' / '140000' / '140k' -> 140000.0 ; anything else -> None."""
+    m = re.fullmatch(r"\$?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*\+?(?:\s*(?:usd|per year|/yr|annually))?", s)
+    if not m or not re.search(r"\d", m[1]):
+        return None
+    return float(m[1].replace(",", "")) * (1000 if m[2] else 1)
+
+
 def equivalent(found, expected):
     """True when the page value and the expected answer mean the same thing (verify_form)."""
     nv, ne = norm(found), norm(expected)
@@ -61,6 +69,20 @@ def equivalent(found, expected):
             return True
     if len(ne) > 3 and (ne in nv or nv in ne):
         return True
+    rv, re_ = str(found).strip().lower(), str(expected).strip().lower()
+    # amounts: "$140,000+" = "140000" = "140k"
+    a, b = _amount(rv), _amount(re_)
+    if a is not None and a == b:
+        return True
+    # range options: page "5-10" / "5 to 10 years" / "10+" contains the expected number "6"
+    if re.fullmatch(r"\d+(\.\d+)?", re_):
+        x = float(re_)
+        r = re.fullmatch(r"(\d+)\s*(?:-|–|to)\s*(\d+)(?:\s*years?)?", rv)
+        if r and float(r[1]) <= x <= float(r[2]):
+            return True
+        p = re.fullmatch(r"(\d+)\s*\+(?:\s*years?)?", rv)
+        if p and x >= float(p[1]):
+            return True
     dv, de = re.sub(r"\D", "", nv), re.sub(r"\D", "", ne)
     return len(dv) >= 7 and dv[-10:] == de[-10:]
 
