@@ -1,11 +1,11 @@
-# job-hunter — a Claude Code plugin for job searching (any role)
+# job-hunter: a Claude Code plugin for job searching (any role)
 
 Give it your resume. Claude then:
 
 1. **Searches** ~190 company job boards daily (Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Remotive) and scores each job against *your* titles, locations, salary floor, skills and visa needs (it auto-skips "no sponsorship", citizenship/clearance-only jobs if they apply to you).
 2. **Screens** each job honestly (fit %, real gaps) and skips poor fits with a written reason.
-3. **Tailors** a 2-page ATS-friendly resume + cover letter per job — rewording and reordering only what's true in your master resume (a truth check blocks invented skills, titles, dates).
-4. **Applies** in the browser (Greenhouse, Lever, Ashby, Workday playbooks) — you approve and click Submit for the first N (default 20).
+3. **Tailors** a 2-page ATS-friendly resume + cover letter per job: rewording and reordering only what's true in your master resume (a truth check blocks invented skills, titles, dates).
+4. **Applies** in the browser (Greenhouse, Lever, Ashby, Workday playbooks): you approve and click Submit for the first N (default 20).
 5. **Tracks** everything in `tracker.xlsx` (one folder per application with the JD, resume, cover letter, answers, screenshots).
 6. **Shows your skills gap**: which skills the market asks for that you don't have, with free learning paths and proof projects.
 7. **Reads your job-alert emails** (LinkedIn, Jobright) through Gmail with an App Password and adds the matches to the tracker.
@@ -13,7 +13,7 @@ Give it your resume. Claude then:
 9. **Screens before it creates folders**: skipped jobs are recorded in the tracker only; folders exist just for jobs you apply to.
 10. **Builds your public portfolio**: a static GitHub Pages site, a GitHub profile README and a public resume PDF (no phone, street address or visa status).
 
-Works for any role: engineers, business analysts, data analysts, product/project managers, security, etc. — setup generates role-specific titles, search terms and skill vocabularies from your resume.
+Works for any role: engineers, business analysts, data analysts, product/project managers, security, etc.: setup generates role-specific titles, search terms and skill vocabularies from your resume.
 
 ## Install (for you or a friend)
 
@@ -33,7 +33,7 @@ Then `/reload-plugins` (or restart) and check `/mcp` shows `plugin:job-hunter:jo
 
 ## First run
 1. Make an empty folder for your job search (e.g. `C:\Users\you\job-search`) and open Claude Code in it.
-2. Run `/job-hunter:setup C:\path\to\your-resume.pdf` — Claude reads the resume, asks only what it can't know (work authorization, salary, locations, EEO choices, approval count), and writes your profile and config.
+2. Run `/job-hunter:setup C:\path\to\your-resume.pdf`: Claude reads the resume, asks only what it can't know (work authorization, salary, locations, EEO choices, approval count), and writes your profile and config.
 3. `/job-hunter:search` to see matches, then `/job-hunter:batch` to tailor and apply.
 4. `/job-hunter:status` any time; `/job-hunter:gap` for what to learn next.
 
@@ -79,12 +79,12 @@ New in 0.2.0 (CLI flags):
 The password is only used for read-only IMAP access to your own mailbox. Revoke it any time from the same Google page.
 
 ## Privacy
-Everything stays in **your** workspace folder on your machine: resume, answers, EEO choices, tracker, and `profile/credentials.json` (ATS passwords, only if you choose to let Claude create Workday accounts). Nothing is uploaded anywhere except the job applications you approve. The workspace `.gitignore` keeps personal files out of git. Don't share your workspace folder — share only this plugin.
+Everything stays in **your** workspace folder on your machine: resume, answers, EEO choices, tracker, and `profile/credentials.json` (ATS passwords, only if you choose to let Claude create Workday accounts). Nothing is uploaded anywhere except the job applications you approve. The workspace `.gitignore` keeps personal files out of git. Don't share your workspace folder: share only this plugin.
 
 ## Honesty & terms
 - The truth check refuses resume content that isn't in your master resume. Fabrication gets offers rescinded; this tool won't do it.
 - You answer every legal question (work authorization wording, arbitration agreements, conflicts of interest) once during setup or when first asked; you tick legal-agreement boxes yourself.
-- LinkedIn and Indeed prohibit automated applying — the plugin uses them only to discover jobs and applies on the company's own site.
+- LinkedIn and Indeed prohibit automated applying: the plugin uses them only to discover jobs and applies on the company's own site.
 - CAPTCHAs, SMS codes and your Google/LinkedIn passwords are always yours to enter.
 
 ## Layout
