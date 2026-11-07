@@ -8,6 +8,7 @@ import json
 import shutil
 import sys
 import tempfile
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -54,6 +55,12 @@ CASES = [  # (label, options, expected status, expected value (option if options
     ("Some brand-new question nobody has seen before?", None, "ASK_USER", None),
 ]
 
+VET_WORKDAY = ["Select One", "I IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF PROTECTED VETERANS", "I IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN", "I AM NOT A VETERAN", "I DO NOT WISH TO SELF-IDENTIFY"]
+VET_GH = ["I am not a protected veteran", "I identify as one or more of the classifications of protected veterans", "I don't wish to answer"]
+VET_REDDIT = ["Active duty", "Veteran", "Reservist", "Military spouse", "No military service", "Prefer not to say"]
+DISAB = ["Yes, I have a disability, or have had one in the past", "No, I do not have a disability and have not had one in the past", "I do not want to answer"]
+DEGREES_ARTS = ["Associate's Degree", "Bachelor of Arts", "Bachelor of Science", "Master of Science", "Doctorate"]
+
 
 def fixture_workspace():
     tmp = Path(tempfile.mkdtemp(prefix="jh_test_"))
@@ -98,6 +105,45 @@ def main():
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
     print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")
+    # choose_option: negation-aware matching (veteran / disability / Hispanic / degree), independent of the bank
+    NO_VET = "No military service"
+    CO = [(NO_VET, VET_WORKDAY, "I AM NOT A VETERAN"), (NO_VET, VET_GH, "I am not a protected veteran"),
+          (NO_VET, VET_REDDIT, "No military service"), (NO_VET, VET_TMO, "I AM NOT A VETERAN"),
+          ("I am not a veteran", VET_WORKDAY, "I AM NOT A VETERAN"),
+          ("No", DISAB, "No, I do not have a disability and have not had one in the past"),
+          ("Yes", DISAB, "Yes, I have a disability, or have had one in the past"),
+          ("No", ["Hispanic or Latino", "Not Hispanic or Latino", "Decline"], "Not Hispanic or Latino"),
+          ("No", ["Yes, I identify as Hispanic or Latino", "No, I do not identify as Hispanic or Latino"], "No, I do not identify as Hispanic or Latino"),
+          ("Bachelor of Engineering", DEGREES_ARTS, "Bachelor of Science"),
+          ("Bachelor of Engineering", ["Bachelor of Arts", "Bachelor's Degree", "Master's Degree"], "Bachelor's Degree"),
+          ("Bachelor of Engineering", ["Bachelor of Engineering", "Bachelor of Arts"], "Bachelor of Engineering")]
+    co_fail = []
+    for ans, opts, want in CO:
+        opt, how = answers.choose_option(ans, opts, ["not a protected veteran", r"\bnot a veteran\b"] if "etera" in want.lower() or "VETERAN" in want else ["^no\b"] if ans == "No" else ["^bachelor"])
+        if opt != want:
+            co_fail.append((ans, want, opt, how))
+    opt, _ = answers.choose_option("Bachelor of Engineering", ["Bachelor of Arts", "Master of Arts"], ["^bachelor"])
+    if opt is not None:
+        co_fail.append(("never Arts", opt))
+    fails += bool(co_fail)
+    print(("FAIL " + str(co_fail)) if co_fail else f"PASS | choose_option negation/veteran/disability/Hispanic/degree ({len(CO) + 1} cases)")
+    # final_review: a clean review passes; the classic mistakes are all caught
+    fws = Workspace(fixture_workspace())
+    good = {"company": "Acme Corp", "title": "Engineer", "files": ["Resume_Jane_Doe_Acme_Corp.pdf", "CoverLetter_Jane_Doe_Acme_Corp.pdf"],
+            "fields": [{"label": "Resume/CV*", "value": "Resume_Jane_Doe_Acme_Corp.pdf", "kind": "file", "required": True},
+                       {"label": "Cover Letter", "value": "CoverLetter_Jane_Doe_Acme_Corp.pdf", "kind": "file"},
+                       {"label": "Pronouns", "value": "She/Her/Hers", "options": ["She/Her/Hers", "He/Him/His"]}],
+            "page_text": "Work experience\nEngineer 03/2021 - Present\nDegree: Bachelor of Science"}
+    r1 = answers.final_review(fws, good)
+    bad = dict(good, files=["Resume_Jane_Doe_Other.pdf"], page_text="Bachelor of Arts\nI IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN\nEngineer 01/2020 - %02d/%d\nError" % (date.today().month, date.today().year),
+               fields=[{"label": "Resume/CV*", "value": "Resume_Jane_Doe_Other.pdf", "kind": "file", "required": True},
+                       {"label": "Cover Letter", "value": "Resume_Jane_Doe_Other.pdf", "kind": "file"},
+                       {"label": "Degree*", "value": "Select One", "required": True}])
+    r2 = answers.final_review(fws, bad)
+    txt = " | ".join(r2["problems"]).lower()
+    fr_ok = r1["ok"] and not r2["ok"] and all(k in txt for k in ("company name", "cover", "placeholder", "bachelor of arts", "identify as", "end date", "error")) and r2["summary_table"]
+    fails += not fr_ok
+    print(("PASS" if fr_ok else "FAIL " + json.dumps(r1["problems"] + r2["problems"], indent=1)) + " | final_review passes a clean form and flags every classic mistake")
     # record() then lookup() must match freshly recorded wordings, punctuation-insensitively
     tmp = fixture_workspace()
     tws = Workspace(tmp)
@@ -117,7 +163,7 @@ def main():
     print(("PASS" if v2["pass"] else "FAIL") + " | verify_form accepts a freshly recorded answer")
     shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 4 - fails}/{len(CASES) + 4} passed")
+    print(f"\n{len(CASES) + 6 - fails}/{len(CASES) + 6} passed")
     sys.exit(1 if fails else 0)
 
 

@@ -192,5 +192,16 @@ def verify_form(workspace: str = "", fields: list[dict] | None = None) -> str:
     return _j(answers.verify_form(_ws(workspace), fields or []))
 
 
+@mcp.tool()
+def final_review(workspace: str = "", review: dict | None = None) -> str:
+    """MANDATORY last step before 'ready to submit' / clicking Submit. On the Review page (or the filled single-page
+    form) read back ALL values and the page text, then pass review = {company, title, fields:[{label,value,required,
+    options?,kind?}], files:[uploaded file names], page_text: full review-page text}. Re-runs verify_form, checks every
+    required field, that the resume file carries the company name and the cover-letter slot holds a CoverLetter file,
+    and scans the text for red flags (wrong degree/veteran/race/gender, future end date on the current job, wrong
+    salary, errors). Returns {ok, problems, summary_table}. Fix every problem and re-run until ok=true."""
+    return _j(answers.final_review(_ws(workspace), review or {}))
+
+
 if __name__ == "__main__":
     mcp.run()

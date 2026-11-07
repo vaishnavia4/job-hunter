@@ -10,6 +10,7 @@ Options matching is subgroup-aware: options_hint (most specific first) is tried 
 generic substring that hits several options (e.g. 'Asian' in 'East Asian'/'South Asian') is AMBIGUOUS, never a
 silent first match.
 """
+import json
 import re
 from datetime import date
 
@@ -120,6 +121,69 @@ def _num(s):
     return out
 
 
+# polarity: an option asserting the opposite of the answer must never win
+POS_START_RX = re.compile(r"^(yes\b|i identify as\b|i am an? |i have an? |i do have\b|i am (hispanic|latino|latina|latinx)\b)")
+NEG_START_RX = re.compile(r"^(no\b|not\b|never\b|none\b|i (am|do|have|will|did) (not|never)\b|i (don't|haven't|won't|didn't)\b)")
+DEGREE_FAMILIES = (("bachelor", "bachelor"), ("master", "master"), ("associate", "associate"), ("doctor", r"doctor|phd|ph d"), ("mba", "mba"))
+DEGREE_FILLER = set("of in the degree degrees s and a an".split())
+
+
+def _polarity(text):
+    """-1 for a 'no / not a veteran' style answer, +1 for 'yes / I identify as ...', 0 neutral/decline."""
+    n = norm(text)
+    if not n or DECLINE_RX.search(n):
+        return 0
+    if NEG_START_RX.match(n):
+        return -1
+    if POS_START_RX.match(n):
+        return 1
+    return 0
+
+
+def _conflicts(option, pol):
+    """True when `option` asserts the opposite of an answer with polarity `pol`."""
+    n = norm(option)
+    if pol < 0:
+        return bool(POS_START_RX.match(n))
+    if pol > 0:
+        return bool(NEG_START_RX.match(n)) or bool(DECLINE_RX.search(n))
+    return False
+
+
+def _degree_words(text):
+    fam = "|".join(rx for _, rx in DEGREE_FAMILIES)
+    t = re.sub(fam, " ", pnorm(text))
+    return {w for w in t.split() if w not in DEGREE_FILLER}
+
+
+def _degree_pick(answer, opts):
+    """Map 'Bachelor of Engineering' onto the offered degree list: same field > generic "Bachelor's Degree" >
+    Science. Never Arts (or another unrelated field) unless the answer itself says so. Returns (option|None, how|None)."""
+    na = pnorm(answer)
+    for name, rx in DEGREE_FAMILIES:
+        if re.search(rx, na):
+            break
+    else:
+        return None, None
+    fam = [o for o in opts if re.search(rx, pnorm(o))]
+    if not fam:
+        return None, None
+    want = _degree_words(answer)
+    if want:
+        scored = [(len(want & _degree_words(o)), o) for o in fam]
+        best = max(sc for sc, _ in scored)
+        if best:
+            top = [o for sc, o in scored if sc == best]
+            return sorted(top, key=len)[0], "degree-field"
+    generic = [o for o in fam if not _degree_words(o)]
+    if generic:
+        return sorted(generic, key=len)[0], "degree-generic"
+    sci = [o for o in fam if "science" in pnorm(o)]
+    if sci and not re.search(r"\barts?\b", na):
+        return sorted(sci, key=len)[0], "degree-science"
+    return None, "degree-no-safe-match"
+
+
 def choose_option(answer, options, hints=None, strategy=""):
     """Pick the option that matches `answer`. Returns (option|None, how)."""
     if not options:
@@ -144,10 +208,27 @@ def choose_option(answer, options, hints=None, strategy=""):
             for lo, hi, o in ranges:
                 if lo <= v < hi:
                     return o, "bracket-contains"
-    # 2. exact
+    # 2. exact / normalized-equal
     for o in opts:
         if norm(o) == na:
             return o, "exact"
+    for o in opts:
+        if pnorm(o) == pnorm(str(answer)) and pnorm(o):
+            return o, "exact-normalized"
+    # never consider an option that asserts the opposite of the answer (identify AS a veteran vs not a veteran)
+    pol = _polarity(str(answer))
+    opts = [o for o in opts if not _conflicts(o, pol)] if pol else opts
+    # 2b. options that START with the answer (unique only)
+    if na:
+        starts = [o for o in opts if re.match(re.escape(na) + r"(\W|$)", norm(o))]
+        if len(starts) == 1:
+            return starts[0], "starts-with"
+    # 2c. degree mapping
+    dopt, dhow = _degree_pick(str(answer), opts)
+    if dopt:
+        return dopt, dhow
+    if dhow == "degree-no-safe-match":
+        return None, dhow
     # 3. hints, most specific first
     for h in hints or []:
         hits = [o for o in opts if re.search(h, norm(o), re.I)]
@@ -158,6 +239,9 @@ def choose_option(answer, options, hints=None, strategy=""):
             both = [o for o in hits if na and na in norm(o)]
             if len(both) == 1:
                 return both[0], f"hint+answer:{h}"
+            starts = [o for o in hits if norm(o).startswith(na)] if na else []
+            if len(starts) == 1:
+                return starts[0], f"hint+start:{h}"
             return sorted(hits, key=len)[0], f"hint-multi:{h}"
     # 4. yes / no polarity
     bank = _bank()
@@ -189,6 +273,10 @@ def choose_option(answer, options, hints=None, strategy=""):
         inside = [o for o in opts if len(norm(o)) > 3 and norm(o) in na]
         if len(inside) == 1:
             return inside[0], "option-in-answer"
+    if pol < 0:  # 'No ...' answer: a single negatively-phrased option ("Not Hispanic or Latino", "I am not ...")
+        negs = [o for o in opts if NEG_START_RX.match(norm(o)) and not DECLINE_RX.search(norm(o))]
+        if len(negs) == 1:
+            return negs[0], "negative-option"
     return None, "no-match"
 
 
@@ -361,3 +449,126 @@ def verify_form(ws, fields):
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "source": r["source"]})
     out["pass"] = not (out["mismatches"] or out["missing_required"] or out["file_problems"] or out["unknown"])
     return out
+
+
+# ---------------------------------------------------------------- final pre-submit review
+PLACEHOLDER_RX = re.compile(r"^(select one|select\.*|choose\.*|choose one|please select\.*|--+|-select-|select an option)$")
+MONTHS = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+DATE_RANGE_RX = re.compile(r"(?P<a>\d{1,2}/\d{4}|[A-Za-z]{3,9}\.? \d{4})\s*(?:-|to)\s*(?P<b>\d{1,2}/\d{4}|[A-Za-z]{3,9}\.? \d{4}|present|current)", re.I)
+
+
+def _ym(s):
+    m = re.match(r"(\d{1,2})/(\d{4})", s)
+    if m:
+        return int(m.group(2)), int(m.group(1))
+    m = re.match(r"([A-Za-z]{3})[A-Za-z]*\.? (\d{4})", s)
+    if m and m.group(1).lower() in MONTHS:
+        return int(m.group(2)), MONTHS.index(m.group(1).lower()) + 1
+    return None
+
+
+def _flag_rules(prof):
+    """(regex, message) red flags that must never appear on a review page; personal ones come from the profile."""
+    eeo = prof.get("eeo_voluntary", {}) or {}
+    edu = json.dumps(prof.get("education", {}) or {}).lower()
+    rules = [(r"\bi identify as (a|one or more)\b", "Veteran option 'I identify as a veteran...' is selected (should be a not-a-veteran / decline option)"),
+             (r"\byes,? i have a disability\b", "Disability answered 'Yes, I have a disability'"),
+             (r"\berror\b|\bmust not be empty\b|\binvalid\b", "The page shows an error / validation message")]
+    if "arts" not in edu:
+        rules.append((r"\bbachelor of arts\b", "Degree reads 'Bachelor of Arts'"))
+    for pat, msg, key in ((r"\beast asian\b", "Race shows 'East Asian'", "race"), (r"\bamerican indian\b", "Race shows 'American Indian'", "race"),
+                          (r"(?<![a-z])male\b", "Gender shows 'Male'", "gender")):
+        if not re.search(pat, norm(str(eeo.get(key, "")))):
+            rules.append((pat, msg))
+    return rules
+
+
+def _page_flags(prof, text):
+    out = []
+    text = text or ""
+    for rx, msg in _flag_rules(prof):
+        m = re.search(rx, text, re.I)
+        if m:
+            out.append(f"{msg} (found '{m.group(0)}')")
+    # a current job must not carry an end date in the current/future month
+    now = (date.today().year, date.today().month)
+    for line in text.splitlines():
+        if re.search(r"present|currently", line, re.I):
+            continue
+        for m in DATE_RANGE_RX.finditer(line):
+            ym = _ym(m.group("b"))
+            if ym and ym >= now:
+                out.append(f"End date {m.group('b')} is in the current/future month - the current job should have no end date ('{line.strip()[:80]}')")
+    # salary shown on the page must match the stored answer
+    jp = prof.get("job_preferences", {}) or {}
+    want = _num(str(jp.get("desired_salary_answer") or prof.get("desired_salary_answer") or ""))
+    if want:
+        for line in text.splitlines():
+            if re.search(r"salary|compensation|pay expectation", line, re.I):
+                got = _num(line)
+                if got and not any(g == want[0] for g in got) and not (len(got) >= 2 and got[0] <= want[0] < got[1]):
+                    out.append(f"Salary on page ({line.strip()[:80]}) does not match the stored answer ({want[0]})")
+    return out
+
+
+def final_review(ws, review):
+    """Last check before submitting. review = {company, title, fields:[{label,value,required,options?,kind?}],
+    files:[names], page_text: optional full review-page text}. Returns {ok, problems, summary_table}."""
+    ws = ws if isinstance(ws, Workspace) else Workspace(ws)
+    review = review or {}
+    fields = review.get("fields") or []
+    files = [str(f) for f in (review.get("files") or [])]
+    company = review.get("company", "")
+    prof = ws.profile() or {}
+    problems = []
+    v = verify_form(ws, fields)
+    for m in v["mismatches"]:
+        problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
+    for lab in v["missing_required"]:
+        problems.append(f"Required field empty: {lab}")
+    for f in v["file_problems"]:
+        problems.append(f"File problem '{f['label']}': {f['problem']}")
+    for u in v["unknown"]:
+        problems.append(f"No stored answer for '{u['label']}' (value {u['value']!r}) - confirm with the user, then record_answer")
+    for f in fields:
+        val = str(f.get("value") or "").strip()
+        if f.get("required") and val and PLACEHOLDER_RX.match(norm(val)):
+            problems.append(f"Required field still a placeholder: {f.get('label')} = {val!r}")
+    # files: resume carries the company slug; cover-letter slot holds a CoverLetter file
+    cslug = re.sub(r"[^a-z0-9]", "", norm(company))[:30]
+    flat = lambda n: re.sub(r"[^a-z0-9]", "", n.lower())
+    is_cover = lambda n: bool(re.search(r"cover", n.replace("_", " "), re.I))
+    slots = [(f, str(f.get("value") or "")) for f in fields
+             if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter", norm(f.get("label", "")))]
+    resume_names = [val for f, val in slots if re.search(r"resume|\bcv\b", norm(f.get("label", ""))) and "cover" not in norm(f.get("label", "")) and val]
+    resume_names = resume_names or [n for n in files if re.search(r"resume|\bcv\b", n, re.I) and not is_cover(n)]
+    cover_slots = [(f, val) for f, val in slots if "cover" in norm(f.get("label", ""))]
+    folder = None
+    if cslug and ws.apps.exists():
+        folder = next((d for d in sorted(ws.apps.iterdir()) if d.is_dir() and flat(d.name.split("_")[0])[:12] == cslug[:12]), None)
+    folder_resumes = {p.name.lower() for p in folder.glob("Resume*")} if folder else set()
+    if not resume_names:
+        problems.append("No resume file is attached")
+    for n in resume_names:
+        if is_cover(n):
+            problems.append(f"Cover letter file '{n}' is in the resume slot")
+        elif cslug and cslug not in flat(n) and n.lower() not in folder_resumes:
+            problems.append(f"Resume file '{n}' does not contain the company name '{company}' - wrong tailored resume?")
+    for f, val in cover_slots:
+        if not val:
+            if f.get("required"):
+                problems.append("Cover-letter slot is empty")
+        elif not is_cover(val) or "resume" in val.lower():
+            problems.append(f"Cover-letter slot holds '{val}', not a CoverLetter file")
+        elif cslug and cslug not in flat(val):
+            problems.append(f"Cover letter '{val}' does not contain the company name '{company}'")
+    problems += _page_flags(prof, review.get("page_text") or "")
+    seen = set()
+    problems = [p for p in problems if not (p in seen or seen.add(p))]
+    bad = {m["label"] for m in v["mismatches"]} | set(v["missing_required"]) | {f["label"] for f in v["file_problems"]}
+    table = [{"field": f.get("label", ""), "value": f.get("value", ""), "required": bool(f.get("required")),
+              "status": "PROBLEM" if f.get("label") in bad else ("TICK-BY-USER" if f.get("label") in v["user_must_tick"] else "ok")}
+             for f in fields]
+    table += [{"field": "file", "value": n, "required": False, "status": "ok"} for n in files]
+    return {"ok": not problems, "company": company, "title": review.get("title", ""), "problems": problems,
+            "user_must_tick": v["user_must_tick"], "essays": v["essays"], "summary_table": table}

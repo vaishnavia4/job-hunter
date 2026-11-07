@@ -18,6 +18,8 @@
   answer "<label>" [--options a|b|c]       look up a form answer
   record "<label>" "<answer>" [--source S] [--hints r1|r2] [--note N]
   verify <fields.json>         verify read-back form fields
+  final-check <review.json>    last pre-submit re-verification (fields, files, page text red flags)
+  selfcheck                    compile every package module (syntax guard)
 """
 import argparse
 import json
@@ -51,12 +53,25 @@ def main(argv=None):
     an = sub.add_parser("answer"); an.add_argument("label"); an.add_argument("--options")
     rc = sub.add_parser("record"); rc.add_argument("label"); rc.add_argument("answer"); rc.add_argument("--source", default="user_correction"); rc.add_argument("--hints"); rc.add_argument("--note", default="")
     vf = sub.add_parser("verify"); vf.add_argument("fields_json")
+    fc = sub.add_parser("final-check"); fc.add_argument("review_json")
+    sub.add_parser("selfcheck")
     a = ap.parse_args(argv)
 
     if a.cmd == "init":
         ws, created = init_workspace(a.workspace)
         _p({"workspace": str(ws.root), "created": created})
         return
+    if a.cmd == "selfcheck":
+        from pathlib import Path
+        bad = []
+        files = sorted(Path(__file__).resolve().parent.rglob("*.py"))
+        for f in files:
+            try:
+                compile(f.read_text(encoding="utf-8"), str(f), "exec")
+            except (SyntaxError, ValueError) as e:
+                bad.append(f"{f}: {e}")
+        _p({"checked": len(files), "ok": not bad, "errors": bad})
+        sys.exit(1 if bad else 0)
     ws = Workspace(a.workspace)
     if a.cmd == "extract":
         print(extract.extract_text(a.path))
@@ -98,6 +113,10 @@ def main(argv=None):
         _p(answers.record(ws, a.label, a.answer, a.source, a.note, a.hints.split("|") if a.hints else None))
     elif a.cmd == "verify":
         _p(answers.verify_form(ws, json.load(open(a.fields_json, encoding="utf-8"))))
+    elif a.cmd == "final-check":
+        res = answers.final_review(ws, json.load(open(a.review_json, encoding="utf-8")))
+        _p(res)
+        sys.exit(0 if res["ok"] else 1)
 
 
 if __name__ == "__main__":

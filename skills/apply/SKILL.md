@@ -21,7 +21,18 @@ Needs the Playwright MCP browser tools. Read `profile/profile.json` (`submit_pol
 3. **Before saying "ready"**: read back EVERY field from the page — label, current value/selected option, the visible
    options, required flag, and for uploads `kind:"file"` + the file name in each box — and call `verify_form(fields)`.
    Fix every `mismatches` / `missing_required` / `file_problems`, confirm `unknown` with the user (then record), and
-   re-run until `pass: true`. Only then screenshot and say "ready to submit".
+   re-run until `pass: true`.
+4. **FINAL CHECK (mandatory, last step before "ready to submit" or any Submit click).** The user wants one last
+   re-verification of everything. On the **Review page** (multi-page ATS such as Workday) or the **filled single-page
+   form** (Greenhouse/Lever/Ashby): read back ALL values (label, selected value, required flag, uploaded file names
+   per upload box) plus the full visible page text, then call
+   `final_review({company, title, fields:[{label,value,required,kind?}], files:[names], page_text})`
+   (CLI: `python -m jobhunter --workspace . final-check review.json`). It re-runs `verify_form`, checks every required
+   field, that the resume file name contains the company and the cover-letter slot holds a CoverLetter file, and scans
+   the text for red flags (Bachelor of Arts, "I identify as a veteran", wrong race/gender, future end date on the
+   current job, wrong salary, "Error"). Fix every item in `problems` (go back to the step, change it, return to Review),
+   and re-run until `ok: true`. THEN show the user the `summary_table` and only then say **"ready to submit"**
+   (or click Submit yourself once `approved_so_far >= approve_first_n`). Never skip this, even for auto-submit.
 
 ## Universal rules
 - **Skip option dumps for phone-country and Country lists** (200+ entries). Type the country (the one in `profile.json`) and click the visible match; don't read all options.
@@ -37,7 +48,7 @@ Needs the Playwright MCP browser tools. Read `profile/profile.json` (`submit_pol
 - Location/relocation: from `job_preferences`.
 - Preferred name fields: fill them.
 - Never apply through LinkedIn/Indeed Easy Apply. CAPTCHA / SMS / personal-account passwords → status `blocked`, tell the user.
-- **Approval mode**: while `approved_so_far < approve_first_n` → fill everything, full-page screenshot to the folder (`review_before_submit.png`), `update_status(status="ready")`, then tell the user **"ready to submit"** with a table of the answers. Don't touch the page while they review. After they confirm it's submitted (check the confirmation page), screenshot it, `update_status(status="applied", submitted_by="user")`, increment `approved_so_far` in profile.json. After N approvals, click Submit yourself and record `submitted_by="claude"`.
+- **Approval mode**: while `approved_so_far < approve_first_n` → fill everything, full-page screenshot to the folder (`review_before_submit.png`), `update_status(status="ready")`, run the FINAL CHECK, then tell the user **"ready to submit"** with the `summary_table` of the answers. Don't touch the page while they review. After they confirm it's submitted (check the confirmation page), screenshot it, `update_status(status="applied", submitted_by="user")`, increment `approved_so_far` in profile.json. After N approvals, click Submit yourself and record `submitted_by="claude"`.
 - Always record answers in `notes.md` and add a dated line to the status log.
 
 ## Greenhouse (job-boards.greenhouse.io / boards.greenhouse.io)
