@@ -69,7 +69,8 @@ def equivalent(found, expected):
     if nonvet.search(nv) and nonvet.search(ne):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
-    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$", nv):
+    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$", nv) \
+            and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search)\b", nv):
         return True
     # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
     affirm = re.compile(r"^(yes,? )?i (agree|acknowledge|accept|consent)\b|^(agree|acknowledged?|accept(ed)?)$")
@@ -424,14 +425,29 @@ def auto_pattern(question_text):
     return "".join(rf"(?=.*\b{re.escape(w)})" for w in words)
 
 
+def _same_question(q, t, answer):
+    """Is a recorded label really the bank question it pattern-matched? Guards against reusing an id for a
+    different question (a Yes/No answer stored under a text question, or a long label that merely mentions it)."""
+    yn = bool(re.match(r"^(yes|no)\b", norm(str(answer))))
+    qtype = q.get("type")
+    if yn and qtype not in ("yes_no", "user_must_tick", "choice", None):
+        return False
+    if qtype == "yes_no" and not yn:
+        return False
+    prompt = norm(q.get("prompt", ""))
+    return not prompt or len(t) <= 3 * max(len(prompt), 20)
+
+
 def record(ws, question_text, answer, source="user_correction", note="", options_hint=None, qid=None):
     """Store/overwrite an answer. Learned entries (user_correction/user_filled) override everything for matching labels."""
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
     data = load_answers(ws)
     answers = data.setdefault("answers", [])
     q = match_question(question_text)
-    qid = qid or (q or {}).get("id") or "custom_" + re.sub(r"[^a-z0-9]+", "_", norm(question_text))[:40].strip("_")
     t = norm(question_text)
+    if q and source != "setup" and not _same_question(q, t, answer):
+        q = None  # e.g. "Home Address (... postal code)" is not the ZIP question; keep a distinct id
+    qid = qid or (q or {}).get("id") or "custom_" + re.sub(r"[^a-z0-9]+", "_", norm(question_text))[:40].strip("_")
     pat = auto_pattern(question_text)
     entry = None
     for a in answers:

@@ -118,6 +118,7 @@ def main():
           ("Computer and Information Science", "Computer Science", True),
           ("Information Systems", "Computer Science", False),
           # affirmations (Zscaler privacy policy "I Agree" vs stored "I acknowledge")
+          ("Humana Website", "Company careers website", True), ("Job Board Website", "Company careers website", False),
           ("I Agree", "I acknowledge", True), ("I accept", "I agree", True), ("I do not agree", "I agree", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
@@ -178,6 +179,16 @@ def main():
     v2 = answers.verify_form(tws, [{"label": "Please provide the name of your current (or most recent) company", "value": "Acme Corp"}])
     fails += not v2["pass"]
     print(("PASS" if v2["pass"] else "FAIL") + " | verify_form accepts a freshly recorded answer")
+    # record() must not reuse a bank id for a different question (2026-11-07: zip / github / field_of_study collisions)
+    ids = {lab: answers.record(tws, lab, ans)["id"] for lab, ans in [
+        ("Home Address (full address including city, state, country and postal code)", "10 Main St, Denver, CO 80202"),
+        ("Do you have experience using GitHub for source control, CI/CD, and platform engineering workflows", "Yes"),
+        ("Do you have 8+ years of experience in cloud infrastructure, platform engineering, or related technical disciplines?", "Yes"),
+        ("Zip code", "80202")]}
+    bad_ids = [(k[:30], v) for k, v in ids.items() if (k != "Zip code" and v in ("zip", "github", "field_of_study"))]
+    zip_ok = answers.lookup(tws, "Postal Code")["answer"] == "80202"
+    fails += bool(bad_ids) or not zip_ok
+    print(("FAIL " + str(bad_ids) + f" zip_ok={zip_ok}") if (bad_ids or not zip_ok) else "PASS | record() keeps distinct ids for look-alike questions")
     # consent_policy: attestations stay USER_MUST_TICK by default, become "Yes" only under recorded standing consent
     att = "I certify that all information provided in this application is true and complete"
     default_tick = answers.lookup(tws, att)["status"] == "USER_MUST_TICK"
@@ -188,7 +199,7 @@ def main():
     print(("PASS" if cp_ok else f"FAIL default_tick={default_tick} pre={r_pre}") + " | attestations: ask by default, Yes under consent_policy")
     shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 7 - fails}/{len(CASES) + 7} passed")
+    print(f"\n{len(CASES) + 8 - fails}/{len(CASES) + 8} passed")
     sys.exit(1 if fails else 0)
 
 
