@@ -116,6 +116,8 @@ def main():
           ("BS", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
           ("BA", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
           ("Bachelors level degree", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
+          ("Bachelors", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
+          ("I AM NOT A VETERAN", "No", True), ("I identify as a veteran, just not a protected veteran", "No", False),
           ("Bachelor of Arts", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
           ("Computer and Information Science", "Computer Science", True),
           ("Information Systems", "Computer Science", False),
@@ -187,6 +189,11 @@ def main():
         ("Do you have experience using GitHub for source control, CI/CD, and platform engineering workflows", "Yes"),
         ("Do you have 8+ years of experience in cloud infrastructure, platform engineering, or related technical disciplines?", "Yes"),
         ("Zip code", "80202")]}
+    answers.record(tws, "I have read and agree to the Non Disclosure Agreement", "I agree")
+    answers.record(tws, "Have you entered into any non-disclosure agreement which could restrict you from performing duties", "No")
+    nda_kept = answers.lookup(tws, "I have read and agree to the Non Disclosure Agreement")["answer"] == "I agree"
+    fails += not nda_kept
+    print(("PASS" if nda_kept else "FAIL") + " | record() never overwrites a different answer of a look-alike question")
     bad_ids = [(k[:30], v) for k, v in ids.items() if (k != "Zip code" and v in ("zip", "github", "field_of_study"))]
     zip_ok = answers.lookup(tws, "Postal Code")["answer"] == "80202"
     fails += bool(bad_ids) or not zip_ok
@@ -213,7 +220,7 @@ def main():
     print(("PASS" if cp_ok else f"FAIL default_tick={default_tick} pre={r_pre}") + " | attestations: ask by default, Yes under consent_policy")
     shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 9 - fails}/{len(CASES) + 9} passed")
+    print(f"\n{len(CASES) + 10 - fails}/{len(CASES) + 10} passed")
     sys.exit(1 if fails else 0)
 
 

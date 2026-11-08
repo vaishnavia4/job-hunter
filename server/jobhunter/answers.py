@@ -66,7 +66,7 @@ def equivalent(found, expected):
     # non-veteran variants: "I am not a protected veteran" = "I am not a veteran" = "No military service"
     # ("I identify as a veteran, just not a protected veteran" is NOT a match: it starts with "I identify as")
     nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served")
-    if nonvet.search(nv) and nonvet.search(ne):
+    if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$", nv) \
@@ -80,7 +80,7 @@ def equivalent(found, expected):
     if re.fullmatch(r"b\.? ?s\.?(c\.?)?", nv) and "bachelor of science" in ne:
         return True
     # generic bachelor's wording ("Bachelors level degree", "Bachelor degree") satisfies "Bachelor's Degree" rules
-    if re.fullmatch(r"bachelor'?s?( level)? degree", nv) and re.search(r"bachelor'?s degree", ne):
+    if re.fullmatch(r"bachelor'?s?( level)?( degree)?", nv) and re.search(r"bachelor'?s degree", ne):
         return True
     # Workday's standard field-of-study option for Computer Science
     if re.fullmatch(r"computer (and|&) information sciences?", nv) and re.match(r"computer science", ne):
@@ -454,7 +454,9 @@ def record(ws, question_text, answer, source="user_correction", note="", options
     pat = auto_pattern(question_text)
     entry = None
     for a in answers:
-        if a.get("source") == source and a.get("patterns") and _match_any(a["patterns"], t):
+        # reuse an existing learned entry only when it already holds the SAME answer; a different answer becomes a new
+        # entry (lookup prefers the newest), so a look-alike question can never silently overwrite another answer
+        if a.get("source") == source and a.get("patterns") and _match_any(a["patterns"], t)                 and norm(str(a.get("answer", ""))) == norm(str(answer)):
             entry = a
             break
     if entry is None and source == "setup":
