@@ -95,8 +95,14 @@ def main(argv=None):
     if a.cmd == "extract":
         print(extract.extract_text(a.path))
     elif a.cmd == "search":
-        _p(search.search(ws, limit=a.limit, analyze_only=a.analyze_only, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr),
-                         exclude_ats=[x.strip() for x in a.exclude_ats.split(',') if x.strip()], preferred_location=a.preferred_location))
+        res = search.search(ws, limit=a.limit, analyze_only=a.analyze_only, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr),
+                            exclude_ats=[x.strip() for x in a.exclude_ats.split(',') if x.strip()], preferred_location=a.preferred_location)
+        if not (a.dry_run or a.analyze_only):
+            # free re-check of the new jobs, incl. application-form questions ("no visa sponsorship/transfer")
+            ps = search.prescreen(ws)
+            if isinstance(res, dict):
+                res["prescreen"] = {k: ps[k] for k in ("skipped", "by_reason")}
+        _p(res)
     elif a.cmd == "alerts":
         _p(alerts.read_alerts(ws, days=a.days, dry_run=a.dry_run, log=lambda m: print(m, file=sys.stderr)))
     elif a.cmd == "add-job":

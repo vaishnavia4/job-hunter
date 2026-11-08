@@ -23,6 +23,8 @@ SPONSORSHIP_BLOCKERS = [
     r"sponsorship (is )?not (available|provided|offered)",
     r"not (eligible|available) for (visa )?sponsorship",
     r"authorized to work .{0,40}without .{0,20}sponsorship",
+    r"not (be )?(offering|providing|supporting) .{0,80}(sponsor|visa)",
+    r"(no|not .{0,30}) (sponsorship ?/ ?)?transfer(ring)? (of )?(a |an )?(h-?1b|visa)",
 ]
 CITIZENSHIP_BLOCKERS = [
     r"u\.?s\.? citizens? only", r"must be a u\.?s\.? citizen", r"u\.?s\.? citizenship (is )?required",
@@ -393,7 +395,7 @@ def reject_key(why):
     return why.split(" [")[0] if why.startswith("hard_skip") else why
 
 
-def prescreen(ws: Workspace, dry_run=False, statuses=("new",)):
+def prescreen(ws: Workspace, dry_run=False, statuses=("new",), forms=True):
     """Re-run the free hard-skip rules over tracker rows (default status 'new') using cached jobs/jd/*.json
     descriptions; matches become 'skipped' with the reason in notes. No AI tokens."""
     rules = hard_skip_rules(ws, ws.cfg("search", {}))
@@ -405,6 +407,10 @@ def prescreen(ws: Workspace, dry_run=False, statuses=("new",)):
         p = ws.jd / (r["job_id"].replace(":", "_") + ".json")
         desc = (load_json(p, {}) or {}).get("description", "") if p.exists() else ""
         why = hard_skip_reason(rules, r["title"], desc)
+        if not why and forms:
+            # some employers state "no visa sponsorship/transfer" only in the application form questions
+            why = hard_skip_reason(rules, r["title"], application_form_text(r["job_id"]))
+            why = why and why + " [application form]"
         if why:
             hits.append({"job_id": r["job_id"], "company": r["company"], "title": r["title"], "reason": why})
             by_reason[why.split(" [")[0]] = by_reason.get(why.split(" [")[0], 0) + 1
@@ -415,6 +421,33 @@ def prescreen(ws: Workspace, dry_run=False, statuses=("new",)):
         ws.save_tracker(rows)
         ws.export_xlsx()
     return {"dry_run": dry_run, "skipped": len(hits), "by_reason": by_reason, "jobs": hits}
+
+
+def application_form_text(job_id):
+    """Best-effort text of a job's application-form questions (Greenhouse / Ashby public endpoints); '' on failure."""
+    try:
+        ats, org, jid = job_id.split(":", 2)
+    except ValueError:
+        return ""
+    try:
+        if ats == "gh":
+            j = requests.get(f"https://boards-api.greenhouse.io/v1/boards/{org}/jobs/{jid}", params={"questions": "true"},
+                             headers=UA, timeout=TIMEOUT).json()
+            parts = []
+            for q in j.get("questions", []) or []:
+                parts.append(q.get("label", "")); parts.append(q.get("description") or "")
+                for f in q.get("fields", []) or []:
+                    parts += [v.get("label", "") for v in f.get("values", []) or []]
+            return re.sub(r"<[^>]+>", " ", " ".join(parts))
+        if ats == "ab":
+            body = {"operationName": "ApiJobPosting", "variables": {"organizationHostedJobsPageName": org, "jobPostingId": jid},
+                    "query": "query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) { jobPosting(organizationHostedJobsPageName: $organizationHostedJobsPageName, jobPostingId: $jobPostingId) { applicationForm { sections { fieldEntries { field } } } } }"}
+            j = requests.post("https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting", json=body, headers=UA, timeout=TIMEOUT).json()
+            secs = (((j.get("data") or {}).get("jobPosting") or {}).get("applicationForm") or {}).get("sections") or []
+            return " ".join(json.dumps(e.get("field", "")) for sec in secs for e in sec.get("fieldEntries", []))
+    except Exception:
+        return ""
+    return ""
 
 
 # ---------------------------------------------------------------- scoring
