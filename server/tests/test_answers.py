@@ -115,6 +115,8 @@ def main():
           ("Corporate Website", "Company careers website", True),
           ("BS", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
           ("BA", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
+          ("Bachelors level degree", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
+          ("Bachelor of Arts", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
           ("Computer and Information Science", "Computer Science", True),
           ("Information Systems", "Computer Science", False),
           # affirmations (Zscaler privacy policy "I Agree" vs stored "I acknowledge")

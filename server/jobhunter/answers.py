@@ -79,6 +79,9 @@ def equivalent(found, expected):
     # degree pick lists with abbreviations only (GED/AA/BA/BS/MS...): "BS" satisfies a rule that allows Bachelor of Science
     if re.fullmatch(r"b\.? ?s\.?(c\.?)?", nv) and "bachelor of science" in ne:
         return True
+    # generic bachelor's wording ("Bachelors level degree", "Bachelor degree") satisfies "Bachelor's Degree" rules
+    if re.fullmatch(r"bachelor'?s?( level)? degree", nv) and re.search(r"bachelor'?s degree", ne):
+        return True
     # Workday's standard field-of-study option for Computer Science
     if re.fullmatch(r"computer (and|&) information sciences?", nv) and re.match(r"computer science", ne):
         return True
