@@ -37,6 +37,10 @@ ALIASES = {
     "meta": "Meta Platforms Inc",
     "facebook": "Meta Platforms Inc",
     "ncar": "Univ Corp for Atmospheric Research",
+    "mastercard": "Mastercard International Inc",
+    "mastercard technologies": "Mastercard International Inc",
+    "mastercard technologies llc": "Mastercard International Inc",
+    "us: mastercard technologies, llc": "Mastercard International Inc",
 }
 _ABBR = [(r"\bUNIVERSITY\b", "UNIV"), (r"\bHEALTHCARE\b", "HEALTH CARE"), (r"\bHOSPITALS?\b", "HOSP"),
          (r"\bINTERNATIONAL\b", "INTL"), (r"\bNATIONAL\b", "NATL"), (r"\bASSOCIATION\b", "ASSN"), (r"\bCOLLEGE\b", "COLL")]
