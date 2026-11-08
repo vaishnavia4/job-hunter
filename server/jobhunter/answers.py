@@ -71,6 +71,10 @@ def equivalent(found, expected):
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$", nv):
         return True
+    # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
+    affirm = re.compile(r"^(yes,? )?i (agree|acknowledge|accept|consent)\b|^(agree|acknowledged?|accept(ed)?)$")
+    if affirm.search(nv) and affirm.search(ne):
+        return True
     # degree pick lists with abbreviations only (GED/AA/BA/BS/MS...): "BS" satisfies a rule that allows Bachelor of Science
     if re.fullmatch(r"b\.? ?s\.?(c\.?)?", nv) and "bachelor of science" in ne:
         return True

@@ -116,7 +116,9 @@ def main():
           ("BS", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
           ("BA", "Bachelor of Engineering (B.E.); if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", False),
           ("Computer and Information Science", "Computer Science", True),
-          ("Information Systems", "Computer Science", False)]
+          ("Information Systems", "Computer Science", False),
+          # affirmations (Zscaler privacy policy "I Agree" vs stored "I acknowledge")
+          ("I Agree", "I acknowledge", True), ("I accept", "I agree", True), ("I do not agree", "I agree", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)
     print(("FAIL " + str(eq_fail)) if eq_fail else "PASS | equivalent(): decline variants, yes/no prefixes, careers website")
