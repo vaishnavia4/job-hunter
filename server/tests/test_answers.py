@@ -122,7 +122,7 @@ def main():
           ("Computer and Information Science", "Computer Science", True),
           ("Information Systems", "Computer Science", False),
           # affirmations (Zscaler privacy policy "I Agree" vs stored "I acknowledge")
-          ("Humana Website", "Company careers website", True), ("Job Board Website", "Company careers website", False),
+          ("Humana Website", "Company careers website", True), ("Careers at Elevance Health", "Company careers website", True), ("Job Board Website", "Company careers website", False),
           ("I Agree", "I acknowledge", True), ("I accept", "I agree", True), ("I do not agree", "I agree", False)]
     eq_fail = [(a, b) for a, b, want in EQ if answers.equivalent(a, b) != want]
     fails += bool(eq_fail)

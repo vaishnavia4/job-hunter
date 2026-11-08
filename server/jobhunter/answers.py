@@ -69,7 +69,7 @@ def equivalent(found, expected):
     if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
-    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$", nv) \
+    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
             and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search)\b", nv):
         return True
     # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
