@@ -426,6 +426,7 @@ class Scorer:
         rx = lambda k, d="(?!x)x": re.compile(c.get(k) or d, re.I)
         self.include, self.exclude = rx("title_include_regex", "."), rx("title_exclude_regex")
         self.bonus, self.senior, self.penalty = rx("title_bonus_regex"), rx("seniority_penalty_regex"), rx("title_penalty_regex")
+        self.penalty_points = int(c.get("title_penalty_points", 8))
         loc = c.get("location", {})
         self.country = re.compile(loc.get("country_regex") or ".", re.I)
         self.non_country = re.compile(loc.get("exclude_regex") or "(?!x)x", re.I)
@@ -497,7 +498,7 @@ class Scorer:
             score -= 8
             reasons.append("senior-stretch title")
         if self.penalty.search(title):
-            score -= 8
+            score -= self.penalty_points
         for r, tb, db in self.kw_bonus:
             if r.search(title):
                 score += tb
