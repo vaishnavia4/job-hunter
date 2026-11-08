@@ -191,6 +191,18 @@ def main():
     zip_ok = answers.lookup(tws, "Postal Code")["answer"] == "80202"
     fails += bool(bad_ids) or not zip_ok
     print(("FAIL " + str(bad_ids) + f" zip_ok={zip_ok}") if (bad_ids or not zip_ok) else "PASS | record() keeps distinct ids for look-alike questions")
+    # daily per-company cap: a 3rd application to the same company today must fail the final check
+    from datetime import date as _d
+    (tmp / "data").mkdir(exist_ok=True)
+    (tmp / "data" / "tracker.csv").write_text("job_id,company,title,status,date_applied\n"
+        f"a1,Acme Enterprise Inc,Role A,applied,{_d.today().isoformat()}\na2,Acme Enterprise Inc,Role B,applied,{_d.today().isoformat()}\n"
+        f"b1,Other Co,Role C,applied,{_d.today().isoformat()}\n", encoding="utf-8")
+    cap_hit = any("Daily cap" in p for p in answers.final_review(tws, {"company": "Acme", "title": "Role D", "fields": []})["problems"])
+    cap_other = any("Daily cap" in p for p in answers.final_review(tws, {"company": "Other Co", "title": "Role E", "fields": []})["problems"])
+    cap_self = any("Daily cap" in p for p in answers.final_review(tws, {"company": "Acme", "job_id": "a2", "fields": []})["problems"])
+    cap_ok = cap_hit and not cap_other and not cap_self
+    fails += not cap_ok
+    print(("PASS" if cap_ok else f"FAIL hit={cap_hit} other={cap_other} self={cap_self}") + " | final_review blocks a 3rd same-company application today")
     # consent_policy: attestations stay USER_MUST_TICK by default, become "Yes" only under recorded standing consent
     att = "I certify that all information provided in this application is true and complete"
     default_tick = answers.lookup(tws, att)["status"] == "USER_MUST_TICK"
@@ -201,7 +213,7 @@ def main():
     print(("PASS" if cp_ok else f"FAIL default_tick={default_tick} pre={r_pre}") + " | attestations: ask by default, Yes under consent_policy")
     shutil.rmtree(tmp, ignore_errors=True)
     print(json.dumps({k: v[k] for k in ("mismatches", "file_problems", "missing_required")}, indent=1))
-    print(f"\n{len(CASES) + 8 - fails}/{len(CASES) + 8} passed")
+    print(f"\n{len(CASES) + 9 - fails}/{len(CASES) + 9} passed")
     sys.exit(1 if fails else 0)
 
 

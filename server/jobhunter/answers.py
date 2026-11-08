@@ -589,6 +589,17 @@ def final_review(ws, review):
     company = review.get("company", "")
     prof = ws.profile() or {}
     problems = []
+    # daily per-company cap (config/search.json max_per_company_per_day): count today's applied rows, any submitter
+    cap = (load_json(ws.config / "search.json", {}) or {}).get("max_per_company_per_day", 2)
+    ckey = lambda s: re.sub(r"\b(inc|llc|corp|corporation|co|company|ltd|enterprise|the)\b|[^a-z0-9]", "", norm(s or ""))
+    if company and cap:
+        today = date.today().isoformat()
+        same = [r for r in ws.load_tracker() if r.get("status") == "applied" and (r.get("date_applied") or "")[:10] == today
+                and ckey(r.get("company")) and (ckey(r.get("company")) in ckey(company) or ckey(company) in ckey(r.get("company")))
+                and not (review.get("job_id") and r.get("job_id") == review.get("job_id"))]
+        if len(same) >= cap:
+            problems.append(f"Daily cap reached: already {len(same)} application(s) to {company} today "
+                            f"({', '.join(r.get('title', '')[:40] for r in same)}); limit is {cap} - do not submit, ask the user")
     v = verify_form(ws, fields)
     for m in v["mismatches"]:
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
