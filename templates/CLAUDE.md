@@ -35,3 +35,5 @@ Tools: the `jobs` MCP server (`search_jobs`, `read_job_alerts`, `add_job`, `arch
 
 - Consent boxes: follow `profile.json` -> `consent_policy` (default `ask`: leave terms / account-creation / attestation boxes for the user; `preauthorized`: tick them and report each one). If a click is blocked by the safety layer, hand it to the user; never work around it.
 
+
+- AI-agent disclosure questions ("are you an AI agent applying..."): never answer from the bank and never claim a human submitted it. Fill everything else, stop before Submit, notify the user; the user submits it themselves or the agent answers truthfully.

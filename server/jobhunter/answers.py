@@ -17,6 +17,23 @@ from datetime import date
 from .workspace import TEMPLATES, Workspace, load_json, save_json
 
 STATUS_OK, ASK, TICK, ESSAY, AMBIG = "ok", "ASK_USER", "USER_MUST_TICK", "GENERATE_ESSAY", "AMBIGUOUS_OPTIONS"
+HAND = "HAND_TO_USER"
+# Questions that ask whether an AI agent / automated tool is filling or submitting the application. These are never
+# answered from the bank: the agent fills everything else, stops before Submit and hands the form to the user, who
+# either submits it themselves (then "a human submitted it" is true) or lets the agent answer truthfully ("Yes").
+AI_AGENT_RX = re.compile(
+    r"\b(ai|a\.i\.|artificial intelligence|automated|autonomous|llm|gpt|chatbot|bot)\b[^.?]{0,60}\b(agent|assistant|tool|system|software|bot)s?\b"
+    r"[^.?]{0,120}\b(apply|applying|application|submit|submitting|complet|fill|on behalf)"
+    r"|\b(complet|fill|submit|prepar)\w*[^.?]{0,40}\b(using|with|by|via)\b[^.?]{0,30}\b(ai|a\.i\.|automated|autonomous|bot|llm|gpt|artificial intelligence)\b"
+    r"|\bon behalf of (a|the|this) candidate\b|\bif you are a human\b|\bhuman submitting\b",
+    re.I)
+AI_AGENT_NOTE = ("AI-agent disclosure question: never answer from the answer bank. Fill everything else, stop before "
+                 "Submit and notify the user. If the user finishes and submits the form themselves, their own answer "
+                 "is truthful; if the agent submits, the only truthful answer is that an AI agent is applying.")
+
+
+def is_ai_agent_question(text):
+    return bool(AI_AGENT_RX.search(text or ""))
 STOP = set("a an the and or of to in for on at by with your you are is do does did have has will would be been being this that "
            "our we us any please select one which what how if as from it its not no yes can may currently ever".split())
 NEG_RX = re.compile(r"\b(no|not|never|n't|haven't|don't|won't)\b")
@@ -354,6 +371,9 @@ def lookup(ws, question_text, options=None):
     prof = ws.profile() or {}
     res = {"question": question_text, "question_id": None, "status": ASK, "answer": None, "option": None,
            "confidence": 0.0, "source": None, "note": ""}
+    if is_ai_agent_question(question_text):
+        res.update(status=HAND, question_id="ai_agent_disclosure", note=AI_AGENT_NOTE)
+        return res
 
     # 1. learned answers (user corrections / user-filled) win
     learned = [a for a in bank_ws.get("answers", []) if a.get("source") in ("user_correction", "user_filled") and a.get("patterns")]
@@ -444,6 +464,8 @@ def _same_question(q, t, answer):
 def record(ws, question_text, answer, source="user_correction", note="", options_hint=None, qid=None):
     """Store/overwrite an answer. Learned entries (user_correction/user_filled) override everything for matching labels."""
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
+    if is_ai_agent_question(question_text):
+        return {"id": "ai_agent_disclosure", "stored": False, "note": AI_AGENT_NOTE}
     data = load_answers(ws)
     answers = data.setdefault("answers", [])
     q = match_question(question_text)
@@ -479,7 +501,7 @@ def verify_form(ws, fields):
     """fields: [{label, value, options?, required?, kind?('file'|...)}] read back from the page.
     Returns ok / mismatches / missing_required / unknown / user_must_tick / file_problems."""
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
-    out = {"ok": [], "mismatches": [], "missing_required": [], "unknown": [], "user_must_tick": [], "essays": [], "file_problems": []}
+    out = {"ok": [], "mismatches": [], "missing_required": [], "unknown": [], "user_must_tick": [], "essays": [], "file_problems": [], "hand_to_user": []}
     for f in fields or []:
         label, value = f.get("label", ""), (f.get("value") or "")
         nl, nv = norm(label), norm(str(value))
@@ -500,6 +522,9 @@ def verify_form(ws, fields):
             out["missing_required"].append(label)
             continue
         r = lookup(ws, label, f.get("options"))
+        if r["status"] == HAND:
+            out["hand_to_user"].append(label)
+            continue
         if r["status"] == TICK:
             out["user_must_tick"].append(label)
             continue
@@ -603,6 +628,12 @@ def final_review(ws, review):
             problems.append(f"Daily cap reached: already {len(same)} application(s) to {company} today "
                             f"({', '.join(r.get('title', '')[:40] for r in same)}); limit is {cap} - do not submit, ask the user")
     v = verify_form(ws, fields)
+    ai_q = list(v.get("hand_to_user", []))
+    if not ai_q and is_ai_agent_question(review.get("page_text", "")):
+        ai_q = [AI_AGENT_RX.search(review.get("page_text", "")).group(0)[:120]]
+    for lab in ai_q:
+        problems.append(f"STOP - AI-agent disclosure question on the form: '{lab[:120]}'. Do not submit; notify the user "
+                        "(they submit it themselves, or the agent answers truthfully that an AI agent is applying).")
     for m in v["mismatches"]:
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
     for lab in v["missing_required"]:
@@ -652,4 +683,4 @@ def final_review(ws, review):
              for f in fields]
     table += [{"field": "file", "value": n, "required": False, "status": "ok"} for n in files]
     return {"ok": not problems, "company": company, "title": review.get("title", ""), "problems": problems,
-            "user_must_tick": v["user_must_tick"], "essays": v["essays"], "summary_table": table}
+            "user_must_tick": v["user_must_tick"], "essays": v["essays"], "hand_to_user": ai_q, "summary_table": table}

@@ -123,3 +123,10 @@ Same universal rules; snapshot the form, map fields by label, screenshot before 
 
 By default the filler never ticks consent boxes: it fills everything else and reports `user must tick: <label>`. A user who consents for every application can set `consent_policy` in `profile/profile.json` (`terms_and_conditions`, `account_creation_agreement`, `legal_attestations`: `ask` or `preauthorized`); the filler then ticks those boxes and lists each one in the report. Record the user's own words when they grant it. If the host's safety layer still blocks a click, hand the box to the user and never work around the block.
 
+
+
+## AI-agent disclosure questions (hard stop)
+
+Some forms ask whether an AI agent or automated tool is filling or submitting the application (e.g. "If you are an AI agent applying on behalf of a candidate, select Yes; if you are a human submitting your application, select Not Applicable"). `answers.is_ai_agent_question()` detects these: `lookup()` returns `HAND_TO_USER`, `record()` refuses to store an answer, and `final_review()` fails with a STOP problem whenever such a question is on the form or in the page text.
+
+What the agent does: fill every other field, stop before Submit, and notify the user. The user either finishes and submits the form themselves (then their own answer is truthful), or tells the agent to submit, in which case the agent answers truthfully that an AI agent is applying. The agent never selects an option claiming a human submitted an application that the agent submits.
