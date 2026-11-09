@@ -25,7 +25,9 @@ AI_AGENT_RX = re.compile(
     r"\b(ai|a\.i\.|artificial intelligence|automated|autonomous|llm|gpt|chatbot|bot)\b[^.?]{0,60}\b(agent|assistant|tool|system|software|bot)s?\b"
     r"[^.?]{0,120}\b(apply|applying|application|submit|submitting|complet|fill|on behalf)"
     r"|\b(complet|fill|submit|prepar)\w*[^.?]{0,40}\b(using|with|by|via)\b[^.?]{0,30}\b(ai|a\.i\.|automated|autonomous|bot|llm|gpt|artificial intelligence)\b"
-    r"|\bon behalf of (a|the|this) candidate\b|\bif you are a human\b|\bhuman submitting\b",
+    # "...acting in an official capacity on behalf of a candidate for political office" (government-official
+    # definitions, Western Union 2026-11-09) is not an AI-agent question
+    r"|\bon behalf of (a|the|this) candidate\b(?!\s+for\s+(political|public|elected)\s+office)|\bif you are a human\b|\bhuman submitting\b",
     re.I)
 AI_AGENT_NOTE = ("AI-agent disclosure question: never answer from the answer bank. Fill everything else, stop before "
                  "Submit and notify the user. If the user finishes and submits the form themselves, their own answer "
@@ -112,6 +114,16 @@ def equivalent(found, expected):
         return True
     # "No, I have not" = "No, they have not" (TD self vs family variants of the same No answer)
     if re.match(r"^no,? (i|they|we) (have|has) not\b", nv) and re.match(r"^no,? (i|they|we) (have|has) not\b", ne):
+        return True
+    # "<Company> Careers" / "<Company> Careers Site" = "Company careers website" (never an "Internal ..." source)
+    if re.fullmatch(r"company careers? (web ?site|site)", ne) and re.search(r"\bcareers?( (site|web ?site|page))?$", nv) and not re.search(r"internal|campus|university|student", nv):
+        return True
+    # background-check statements acknowledged with "I have read the above statement and wish to continue" = Yes
+    if ne == "yes" and re.match(r"^i have read (and understand )?the (above )?statement( and wish to continue)?", nv):
+        return True
+    # "Englewood, CO, USA" = "Englewood, Colorado" (Lever location widget, 2026-11-09)
+    _loc = lambda s: re.sub(r",\s*(usa|us|united states( of america)?)$", "", re.sub(r",\s*co\b", ", colorado", s)).strip()
+    if "," in nv and "," in ne and _loc(nv) == _loc(ne):
         return True
     # merged work-auth dropdown (authorized any employer / present employer only / currently require sponsorship / ...):
     # Vaishnavi 2026-11-09 "Penn: c" - "I currently require sponsorship to work in this country" answers "legally authorized?"
@@ -747,6 +759,16 @@ def final_review(ws, review):
     other_detail = [f for f in fields if re.search(r"(choose|chose|select(ed)?) other|if other|please specify|where .{0,40}hear",
                                                        str(f.get("label", "")), re.I)
                     and re.search(r"careers? (web ?site|site|page)|company (web ?site|site)", str(f.get("value", "")), re.I)]
+    # Per-application verified facts (e.g. "have you applied here before?" read from the candidate's own account history):
+    # review["verified_overrides"] = {label: {"value": ..., "source": "<where it was verified>"}}. A label is accepted
+    # only if the page value equals the stored value AND a source is given; every override is echoed in the result.
+    vo = {norm(k): x for k, x in (review.get("verified_overrides") or {}).items()
+          if isinstance(x, dict) and str(x.get("source", "")).strip()}
+    def _ok_override(label, value):
+        x = vo.get(norm(str(label)))
+        return bool(x) and norm(str(x.get("value", ""))) == norm(str(value))
+    v["mismatches"] = [m for m in v["mismatches"] if not _ok_override(m.get("label"), m.get("found"))]
+    v["unknown"] = [u for u in v["unknown"] if not _ok_override(u.get("label"), u.get("value"))]
     for m in v["mismatches"]:
         if (other_detail and norm(str(m.get("found", ""))) == "other"
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
@@ -812,4 +834,5 @@ def final_review(ws, review):
              for f in fields]
     table += [{"field": "file", "value": n, "required": False, "status": "ok"} for n in files]
     return {"ok": not problems, "company": company, "title": review.get("title", ""), "problems": problems,
-            "user_must_tick": v["user_must_tick"], "essays": v["essays"], "hand_to_user": ai_q, "summary_table": table}
+            "user_must_tick": v["user_must_tick"], "essays": v["essays"], "hand_to_user": ai_q, "summary_table": table,
+            "verified_overrides": [{"label": k, **x} for k, x in vo.items()]}
