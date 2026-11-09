@@ -110,6 +110,9 @@ def equivalent(found, expected):
     # "Can work for any employer" means Yes (sponsorship questions are separate canonical questions)
     if ne.startswith("can work for any employer") and nv == "yes":
         return True
+    # Yes/No "Are you open to relocation?": a relocation answer of "Anywhere" (open to anywhere in the US) means Yes
+    if re.match(r"^(yes\b.*)?anywhere\b", ne) and nv == "yes":
+        return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
             and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search|campus|university|college)\b", nv):
