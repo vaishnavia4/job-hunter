@@ -95,7 +95,12 @@ def main():
     fails += not vf_ok
     print(("PASS" if vf_ok else "FAIL") + " | verify_form flags East Asian, resume-in-cover-letter, missing LinkedIn; accepts pronouns/phone")
     # equivalence: decline variants, yes/no prefixes, "<Company> careers website"
-    EQ = [("I don't wish to answer", "Decline to self-identify", True),
+    EQ = [("Bachelor of Engineering (BEng)", "Bachelor of Engineering (B.E.) in Computer Science and Engineering; if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
+          ("Bachelor of Arts", "Bachelor of Engineering (B.E.) in Computer Science and Engineering", False),
+          ("No", "None", True),
+          ("Yes - I am open to relocation", "Anywhere", True),
+          ("No - I am not open to relocation", "Anywhere", False),
+          ("I don't wish to answer", "Decline to self-identify", True),
           ("Prefer not to say", "I don’t wish to answer", True),
           ("No, I do not have a disability and have not had one in the past", "No", True),
           ("Yes, I have a disability", "No", False),

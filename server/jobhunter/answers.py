@@ -105,6 +105,16 @@ def equivalent(found, expected):
     # race lists without subgroups: expected "South Asian ..." is satisfied by plain "Asian" (never "American Indian")
     if ne.startswith("south asian") and re.match(r"asian\b", nv):
         return True
+    # Bachelor of Engineering abbreviations: "Bachelor of Engineering (BEng)" = "Bachelor of Engineering (B.E.) ..."
+    beng = re.compile(r"^bachelor of engineering\b|^b\.? ?e(ng)?\.?$")
+    if beng.search(nv) and beng.search(ne):
+        return True
+    # clearance: a "No" on the page satisfies a stored "None" (no clearance held)
+    if {nv, ne} == {"no", "none"}:
+        return True
+    # relocation: stored "Anywhere"/"Yes" is satisfied by an option that says the candidate is open/willing to relocate
+    if ne in ("anywhere", "yes") and re.match(r"(yes\W+)?(i am |i'm )?(open|willing) to relocat", nv):
+        return True
     # yes/no prefixes: "No, I do not have a disability..." = "No"
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
