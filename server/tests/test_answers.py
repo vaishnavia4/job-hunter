@@ -32,8 +32,9 @@ CASES = [  # (label, options, expected status, expected value (option if options
                          "IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF PROTECTED VETERANS", "I DO NOT WISH TO SELF-IDENTIFY"], "ok", "I AM NOT A VETERAN"),
     ("Veterans Status", ["IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN", "IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF PROTECTED VETERANS",
                          "I AM NOT A PROTECTED VETERAN", "I DO NOT WISH TO SELF-IDENTIFY"], "ok", "I AM NOT A PROTECTED VETERAN"),
-    # employer AI-screening consent: Vaishnavi's standing rule 2026-11-09 = No
-    ("I consent to FIS using these AI tools to screen my resume, application and other information I provide:", ["Yes", "No"], "ok", "No"),
+    # employer AI-screening consent: recognized as its own question, never auto-answered from the sample bank
+    # (each user sets a standing rule in their workspace bank; Vaishnavi's is No)
+    ("I consent to FIS using these AI tools to screen my resume, application and other information I provide:", ["Yes", "No"], "ASK_USER", None),
     ("Race (*Please select one option that best describes how you identify*)*", RACE_GH, "ok", "Asian: South Asian"),
     ("Ethnicity", ETH_BENCHLING, "ok", ETH_BENCHLING[1]),
     ("Please select the Race/Ethnicity which most accurately describes how you identify yourself*", ["American Indian or Alaskan Native (United States of America)", "Asian (United States of America)", "White (United States of America)"], "ok", "Asian (United States of America)"),
