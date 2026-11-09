@@ -113,6 +113,13 @@ def equivalent(found, expected):
     # "No, I have not" = "No, they have not" (TD self vs family variants of the same No answer)
     if re.match(r"^no,? (i|they|we) (have|has) not\b", nv) and re.match(r"^no,? (i|they|we) (have|has) not\b", ne):
         return True
+    # merged work-auth dropdown (authorized any employer / present employer only / currently require sponsorship / ...):
+    # Vaishnavi 2026-11-09 "Penn: c" - "I currently require sponsorship to work in this country" answers "legally authorized?"
+    if ne == "yes" and nv.startswith("i currently require sponsorship to work in this country"):
+        return True
+    # "Not Hispanic or Latino" = "No" to "Are you Hispanic or Latino?" (Bloomberg ethnicity dropdown 2026-11-09)
+    if {nv, ne} == {"not hispanic or latino", "no"}:
+        return True
     # sponsorship phrasings: "Yes, I will require sponsorship" = "Yes - I will require sponsorship now and in the future"
     if re.match(r"^yes\b", nv) and re.match(r"^yes\b", ne) and "sponsor" in nv and "sponsor" in ne:
         return True
@@ -615,6 +622,21 @@ def verify_form(ws, fields):
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "problem": "empty"})
         elif equivalent(value, expected):
             out["ok"].append(label)
+        elif (re.fullmatch(r"\d+(\.\d+)?", norm(str(expected))) and nv in ("yes", "no")
+              and re.search(r"(\d+)\s*(\+|or more|or greater)\s*years|at least (\d+) years", nl)):
+            # "Do you have 5 or more years ...?" with a stored year count (6): Yes iff count >= threshold
+            m = re.search(r"(\d+)\s*(?:\+|or more|or greater)\s*years|at least (\d+) years", nl)
+            need = int(m.group(1) or m.group(2))
+            (out["ok"] if (nv == "yes") == (float(expected) >= need) else out["mismatches"]).append(
+                label if (nv == "yes") == (float(expected) >= need)
+                else {"label": label, "expected": "Yes" if float(expected) >= need else "No", "found": value, "source": r["source"]})
+        elif (any(q.get("id") == r.get("question_id") and q.get("verify_by_hint") for q in _bank().get("questions", []))
+              and (lambda r2: r2.get("option") == value and str(r2.get("option_match", "")).startswith(("hint", "exact")))(
+                lookup(ws, label, [value]))):
+            # ONLY for questions marked verify_by_hint (company-specific survey wording, e.g. company_familiarity):
+            # the stored answer maps to the page's option through the question's own options_hint.
+            # Never generic - a hint fallback would accept "East Asian" for race (test_answers caught it 2026-11-09).
+            out["ok"].append(label)
         else:
             out["mismatches"].append({"label": label, "expected": expected, "found": value, "source": r["source"]})
     out["pass"] = not (out["mismatches"] or out["missing_required"] or out["file_problems"] or out["unknown"])
@@ -727,6 +749,15 @@ def final_review(ws, review):
                     and re.search(r"careers? (web ?site|site|page)|company (web ?site|site)", str(f.get("value", "")), re.I)]
     for m in v["mismatches"]:
         if (other_detail and norm(str(m.get("found", ""))) == "other"
+                and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
+            continue
+        # jobs discovered through LinkedIn job alerts (job_id "li:...") truthfully came from LinkedIn: "LinkedIn" /
+        # "LinkedIn job post" is the honest how-heard answer there (Vaishnavi 2026-11-09: "linked in ... anything is fine")
+        co_word = (norm(company).split() or [""])[0]
+        her_li = any(e.get("source") == "user_correction" and re.match(r"linked ?in\b", norm(str(e.get("answer", ""))))
+                     and co_word and co_word in norm(str(e.get("example", ""))) and "hear" in norm(str(e.get("example", "")))
+                     for e in (load_json(_ws_bank_path(ws), {}) or {}).get("answers", []))
+        if ((str(review.get("job_id", "")).startswith("li:") or her_li) and re.match(r"linked ?in\b", norm(str(m.get("found", ""))))
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
             continue
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")

@@ -537,6 +537,25 @@
    "notes": ""
   },
   {
+   "id": "company_familiarity",
+   "category": "preferences",
+   "prompt": "Before applying, how familiar were you with the company?",
+   "patterns": [
+    "how familiar (were|are) you with",
+    "familiarity with (our company|us)"
+   ],
+   "type": "choice",
+   "profile_key": null,
+   "options_hint": [
+    "through (this|the) job (posting|post|ad)",
+    "learned about .*(posting|recruiter)",
+    "(first|never) heard .*(posting|this role)"
+   ],
+   "option_strategy": "",
+   "notes": "",
+   "verify_by_hint": true
+  },
+  {
    "id": "how_heard",
    "category": "sourcing",
    "prompt": "How did you hear about this job? (default: the company's careers site)",
@@ -1357,7 +1376,8 @@
    "prompt": "Willing to undergo a background check?",
    "patterns": [
     "background (check|investigation|screening)",
-    "criminal (record|background|history) (check|investigation|screening)"
+    "criminal (record|background|history) (check|investigation|screening)",
+    "background (and|&) credit (check|investigation|screening)"
    ],
    "type": "yes_no",
    "profile_key": "standard_answers.background_check_ok",
