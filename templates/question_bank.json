@@ -461,7 +461,8 @@
     "former employee",
     "(a |an )?(previous|former|past) (worker|employee|contractor)( or (contractor|worker|employee))? (of|at|for|with)",
     "current or former employee",
-    "directly employed with"
+    "directly employed with",
+    "prior (employment|work)( or contractor experience)? (with|at|for)"
    ],
    "type": "yes_no",
    "profile_key": "standard_answers.previously_worked_here",
