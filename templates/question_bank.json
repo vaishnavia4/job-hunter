@@ -214,12 +214,28 @@
    "notes": ""
   },
   {
+   "id": "citizenship_countries",
+   "category": "work_authorization",
+   "prompt": "Which country/countries are you a citizen of?",
+   "patterns": [
+    "(countr(y|ies)|nation(s|ality)?)\\b.{0,60}\\bcitizen",
+    "\\bcitizen(ship)?\\b.{0,40}\\bcountr(y|ies)",
+    "^(country of )?(citizenship|nationality)\\W*$"
+   ],
+   "type": "text",
+   "profile_key": "work_authorization.citizenship",
+   "options_hint": [],
+   "option_strategy": "",
+   "notes": "Lists countries (e.g. 'India'), never Yes/No. Checked before us_citizen."
+  },
+  {
    "id": "us_citizen",
    "category": "work_authorization",
    "prompt": "Are you a US citizen? (only used to filter jobs / when a form asks)",
    "patterns": [
     "u\\.?s\\.? citizen",
-    "citizenship"
+    "united states citizen",
+    "(?<!country of )(?<!countries of )\\bcitizenship\\b(?!.{0,40}\\bcountr)"
    ],
    "type": "yes_no",
    "profile_key": "work_authorization.us_citizen",
