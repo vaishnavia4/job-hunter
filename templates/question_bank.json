@@ -1300,6 +1300,20 @@
    "notes": ""
   },
   {
+   "id": "employer_ai_screening_consent",
+   "category": "consent",
+   "prompt": "Consent to the employer using AI tools to screen/evaluate your application or recommend jobs (employer's AI, NOT 'are you an AI agent').",
+   "patterns": [
+    "consent to (the use of )?(ai|artificial intelligence)",
+    "(uses?|using) (ai|artificial intelligence)[- ]?(based )?tools? .{0,80}(recruit|screen|evaluat|recommend|candida)",
+    "(ai|artificial intelligence).{0,60}(recruitment|hiring) process.{0,120}consent",
+    "consenting to the use of ai",
+    "(consent|agree) to [\\w&.' -]{1,40}? using (these |its |the )?(ai|artificial intelligence)"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
    "id": "essay_ai_usage",
    "category": "essays",
    "prompt": "(generated per job) - how you use AI tools, truthful, from the master resume",
@@ -1376,6 +1390,18 @@
    "patterns": [
     "consent to .{0,40}retain(ing)? my information",
     "(retain|keep) my (information|application|resume) .{0,40}(other|future) (position|opening|role|opportunit)"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
+   "id": "involuntary_discharge",
+   "category": "background",
+   "prompt": "Have you ever been involuntarily discharged / fired / asked to resign?",
+   "patterns": [
+    "involuntarily (discharged|terminated|separated)",
+    "(ever )?been (fired|terminated|discharged)",
+    "asked to resign"
    ],
    "type": "choice",
    "profile_key": null
