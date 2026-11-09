@@ -109,6 +109,28 @@
    "notes": ""
   },
   {
+   "id": "sponsorship_explanation",
+   "category": "work_authorization",
+   "prompt": "Free-text: describe your visa / sponsorship situation.",
+   "patterns": [
+    "^(please )?(describe|explain)\\b.{0,120}(sponsor|visa|immigration)",
+    "(describe|explain) your (current )?(visa|immigration|work authori[sz]ation) (status|situation)"
+   ],
+   "type": "text",
+   "profile_key": "work_authorization.sponsorship_explanation"
+  },
+  {
+   "id": "h1b_years",
+   "category": "work_authorization",
+   "prompt": "How many years have you been in the U.S. in H-1B status? (from profile work_authorization.h1b_status_start)",
+   "patterns": [
+    "years.{0,40}(present|been).{0,40}in h-?1b status",
+    "how (long|many years).{0,40}h-?1b"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
    "id": "sponsor_now_or_future",
    "category": "work_authorization",
    "prompt": "'Will you now OR in the future require visa sponsorship?' - Yes or No?",
