@@ -110,6 +110,12 @@ def equivalent(found, expected):
     # "Can work for any employer" means Yes (sponsorship questions are separate canonical questions)
     if ne.startswith("can work for any employer") and nv == "yes":
         return True
+    # "No, I have not" = "No, they have not" (TD self vs family variants of the same No answer)
+    if re.match(r"^no,? (i|they|we) (have|has) not\b", nv) and re.match(r"^no,? (i|they|we) (have|has) not\b", ne):
+        return True
+    # sponsorship phrasings: "Yes, I will require sponsorship" = "Yes - I will require sponsorship now and in the future"
+    if re.match(r"^yes\b", nv) and re.match(r"^yes\b", ne) and "sponsor" in nv and "sponsor" in ne:
+        return True
     # Yes/No "Are you open to relocation?": a relocation answer of "Anywhere" (open to anywhere in the US) means Yes
     if re.match(r"^(yes\b.*)?anywhere\b", ne) and nv == "yes":
         return True

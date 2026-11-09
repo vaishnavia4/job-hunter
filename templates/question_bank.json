@@ -1117,6 +1117,40 @@
    "notes": ""
   },
   {
+   "id": "high_school_diploma",
+   "category": "education",
+   "prompt": "Do you have a high-school diploma or equivalent (minimum education requirement)?",
+   "patterns": [
+    "(secondary school|high school) (diploma|degree)( or equivalent)?.{0,80}(meet|have|requirement)",
+    "meet this educational requirement"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
+   "id": "employment_type_sought",
+   "category": "preferences",
+   "prompt": "What type of employment are you seeking (full-time / part-time / contract ...)?",
+   "patterns": [
+    "type of employment are you seeking",
+    "(seeking|looking for) (full|part)[- ]time",
+    "employment type (preference|desired)"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
+   "id": "weekly_hours",
+   "category": "preferences",
+   "prompt": "Expected number of weekly hours",
+   "patterns": [
+    "(expected|desired) (number of )?(weekly )?hours",
+    "hours per week (are you|do you)"
+   ],
+   "type": "text",
+   "profile_key": null
+  },
+  {
    "id": "degree",
    "category": "education",
    "prompt": "Highest degree (as it should appear in degree dropdowns). Fill even when optional?",
