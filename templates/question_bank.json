@@ -131,6 +131,17 @@
    "profile_key": null
   },
   {
+   "id": "visa_expiry",
+   "category": "work_authorization",
+   "prompt": "When does your current visa / work authorization expire? (date)",
+   "patterns": [
+    "(visa|work authori[sz]ation|status|h-?1b|ead|i-?94).{0,60}expir",
+    "expiration date of your (visa|work authori[sz]ation|status)"
+   ],
+   "type": "date",
+   "profile_key": "work_authorization.h1b_expiry"
+  },
+  {
    "id": "h1b_years",
    "category": "work_authorization",
    "prompt": "How many years have you been in the U.S. in H-1B status? (from profile work_authorization.h1b_status_start)",
