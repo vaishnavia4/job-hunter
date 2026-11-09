@@ -734,8 +734,11 @@ def final_review(ws, review):
     cslug = re.sub(r"[^a-z0-9]", "", norm(company))[:30]
     flat = lambda n: re.sub(r"[^a-z0-9]", "", n.lower())
     is_cover = lambda n: bool(re.search(r"cover", n.replace("_", " "), re.I))
+    # file slots: explicit file fields, or SHORT labels naming a resume/CV/cover letter. A long question that merely
+    # mentions "resume" (FIS: "...AI tools to screen my resume, application...") is not an upload slot.
     slots = [(f, str(f.get("value") or "")) for f in fields
-             if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter", norm(f.get("label", "")))]
+             if f.get("kind") == "file" or (re.search(r"resume|\bcv\b|cover letter", norm(f.get("label", "")))
+                                            and len(norm(f.get("label", ""))) <= 60)]
     resume_names = [val for f, val in slots if re.search(r"resume|\bcv\b", norm(f.get("label", ""))) and "cover" not in norm(f.get("label", "")) and val]
     resume_names = resume_names or [n for n in files if re.search(r"resume|\bcv\b", n, re.I) and not is_cover(n)]
     cover_slots = [(f, val) for f, val in slots if "cover" in norm(f.get("label", "")) and not re.search(r"resume|\bcv\b", norm(f.get("label", "")))]
