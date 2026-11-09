@@ -103,7 +103,7 @@ def equivalent(found, expected):
     if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
-    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
+    if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
             and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search|campus|university|college)\b", nv):
         return True
     # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
@@ -135,6 +135,16 @@ def equivalent(found, expected):
     # relocation: stored "Anywhere"/"Yes" is satisfied by an option that says the candidate is open/willing to relocate
     if ne in ("anywhere", "yes") and re.match(r"(yes\W+)?(i am |i'm )?(open|willing) to relocat", nv):
         return True
+    # gender wording: "Woman" = "Female", "Man" = "Male"
+    if {nv, ne} in ({"woman", "female"}, {"man", "male"}):
+        return True
+    # salary brackets: page "125,001 - 150,000" contains the expected amount 140000
+    rng = re.fullmatch(r"\$?\s*([\d,]{4,})\s*(?:-|to|\u2013)\s*\$?\s*([\d,]{4,})", str(found).strip())
+    amt = _amount(str(expected).strip().lower())
+    if rng and amt is not None:
+        lo, hi = float(rng[1].replace(",", "")), float(rng[2].replace(",", ""))
+        if lo <= amt <= hi:
+            return True
     # yes/no prefixes: "No, I do not have a disability..." = "No"
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
