@@ -690,6 +690,17 @@ def final_review(ws, review):
     for lab in ai_q:
         problems.append(f"STOP - AI-agent disclosure question on the form: '{lab[:120]}'. Do not submit; notify the user "
                         "(they submit it themselves, or the agent answers truthfully that an AI agent is applying).")
+    # address shown on the page must be the profile address (old applicant profiles can prefill a previous address)
+    pers = (ws.profile() or {}).get("personal", {}) or {}
+    zip_, city = str(pers.get("zip") or "").strip(), norm(str(pers.get("city") or ""))
+    for f in fields:
+        lab, val = norm(str(f.get("label", ""))), norm(str(f.get("value", "")))
+        if re.fullmatch(r"(home |street |current |mailing )?address( line 1)?|postal code|zip( code)?|city", lab) and val:
+            if (lab in ("postal code", "zip", "zip code") and zip_ and zip_ not in val) or \
+               (lab == "city" and city and city not in val) or \
+               (lab.endswith("address") and zip_ and city and zip_ not in val and city not in val):
+                problems.append(f"Address mismatch '{f.get('label')}': page has {f.get('value')!r}, profile is {pers.get('city')} {zip_} - "
+                                "an old profile may have prefilled a previous address")
     # "How did you hear" = "Other" is correct when the list has no company-site option and the form's own
     # "if Other, where?" follow-up names the careers site (e.g. "LogicGate careers website").
     other_detail = [f for f in fields if re.search(r"(choose|chose|select(ed)?) other|if other|please specify|where .{0,40}hear",
