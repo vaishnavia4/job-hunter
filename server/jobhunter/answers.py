@@ -661,7 +661,15 @@ def final_review(ws, review):
     for lab in ai_q:
         problems.append(f"STOP - AI-agent disclosure question on the form: '{lab[:120]}'. Do not submit; notify the user "
                         "(they submit it themselves, or the agent answers truthfully that an AI agent is applying).")
+    # "How did you hear" = "Other" is correct when the list has no company-site option and the form's own
+    # "if Other, where?" follow-up names the careers site (e.g. "LogicGate careers website").
+    other_detail = [f for f in fields if re.search(r"(choose|chose|select(ed)?) other|if other|please specify|where .{0,40}hear",
+                                                       str(f.get("label", "")), re.I)
+                    and re.search(r"careers? (web ?site|site|page)|company (web ?site|site)", str(f.get("value", "")), re.I)]
     for m in v["mismatches"]:
+        if (other_detail and norm(str(m.get("found", ""))) == "other"
+                and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
+            continue
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
     for lab in v["missing_required"]:
         problems.append(f"Required field empty: {lab}")
