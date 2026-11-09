@@ -32,8 +32,24 @@ AI_AGENT_NOTE = ("AI-agent disclosure question: never answer from the answer ban
                  "is truthful; if the agent submits, the only truthful answer is that an AI agent is applying.")
 
 
+# Employer notices about THEIR use of AI to screen applications ("We use Greenhouse's AI-powered Talent Matching tool
+# to compare your application ...") are not questions about whether an AI agent is applying.
+EMPLOYER_AI_NOTICE_RX = re.compile(
+    r"\b(we|our (team|company|hiring team|recruiters?)|this (company|employer)|[A-Z][\w&.-]* (uses|leverages))\b[^.?]{0,40}"
+    r"\b(use|uses|using|leverage|leverages|may use)\b[^.?]{0,80}"
+    r"\b(compare|review|evaluate|screen|assess|match|rank|score|process|analy[sz]e)\b[^.?]{0,40}"
+    r"\b(your|candidates?'?|applicants?'?|applications?)\b",
+    re.I)
+
+
 def is_ai_agent_question(text):
-    return bool(AI_AGENT_RX.search(text or ""))
+    """True when the text asks whether an AI agent / automated tool is applying or submitting.
+    Sentences that only announce the EMPLOYER's own use of AI for screening are ignored."""
+    t = text or ""
+    for sent in re.split(r"(?<=[.?!])\s+|\n+", t):
+        if AI_AGENT_RX.search(sent) and not EMPLOYER_AI_NOTICE_RX.search(sent):
+            return True
+    return False
 STOP = set("a an the and or of to in for on at by with your you are is do does did have has will would be been being this that "
            "our we us any please select one which what how if as from it its not no yes can may currently ever".split())
 NEG_RX = re.compile(r"\b(no|not|never|n't|haven't|don't|won't)\b")
@@ -57,7 +73,8 @@ CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?careers? (?:website|site
 def _canon(s):
     """Canonical form used to compare a stored answer with what is on the page."""
     n = norm(s)
-    if CAREERS_RX.match(n):
+    # "Campus Career Site" / "University career site" are student-recruiting channels, not the company's own site
+    if CAREERS_RX.match(n) and not re.search(r"\b(campus|university|college|job board)\b", n):
         return "company careers website"
     return n
 
@@ -82,12 +99,12 @@ def equivalent(found, expected):
         return True
     # non-veteran variants: "I am not a protected veteran" = "I am not a veteran" = "No military service"
     # ("I identify as a veteran, just not a protected veteran" is NOT a match: it starts with "I identify as")
-    nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served")
+    nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served|^i do not identify as a (protected )?veteran")
     if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
-            and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search)\b", nv):
+            and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search|campus|university|college)\b", nv):
         return True
     # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
     affirm = re.compile(r"^(yes,? )?i (agree|acknowledge|accept|consent)\b|^(agree|acknowledged?|accept(ed)?)$")

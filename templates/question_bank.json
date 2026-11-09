@@ -485,7 +485,7 @@
    "type": "choice",
    "profile_key": "standard_answers.how_did_you_hear",
    "options_hint": [
-    "careers? (site|website|page)",
+    "^(?!.*\\b(campus|university|college)\\b).*careers? (site|website|page)",
     "company (website|site)",
     "\\.com/careers",
     "^website$",

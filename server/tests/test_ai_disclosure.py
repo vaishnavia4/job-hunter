@@ -21,6 +21,10 @@ MISSES = [
     "Describe your experience building automated deployment tools.",
     "Do you have experience with AI agents and MCP integrations?",
     "Are you legally authorized to work in the United States?",
+    # employer notices about their own AI screening (Backblaze / Greenhouse 2026-11-09)
+    "We use Greenhouse’s AI-powered Talent Matching tool to compare your application against our job requirements.",
+    "Our hiring team may use AI tools to review and evaluate applications.",
+    "By selecting Yes, I am consenting to the use of AI for evaluating my candidacy.",
 ]
 
 
