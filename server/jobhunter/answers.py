@@ -67,7 +67,7 @@ def pnorm(s):
     return re.sub(r"[^a-z0-9]+", " ", norm(s)).strip()
 
 
-CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?careers? (?:website|site|page)$")
+CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?(?:careers?|jobs?) (?:website|web site|site|page)$")
 
 
 def _canon(s):
@@ -117,7 +117,7 @@ def equivalent(found, expected):
     if re.match(r"bachelor of science\b", nv) and "bachelor of science" in ne:
         return True
     # generic bachelor's wording ("Bachelors level degree", "Bachelor degree") satisfies "Bachelor's Degree" rules
-    if re.fullmatch(r"bachelor'?s?( level)?( degree)?", nv) and re.search(r"bachelor'?s degree", ne):
+    if re.fullmatch(r"bachelor'?s?( level)?( degree)?( or equivalent)?", nv) and re.search(r"bachelor'?s degree", ne):
         return True
     # Workday's standard field-of-study option for Computer Science
     if re.fullmatch(r"computer (and|&) information sciences?", nv) and re.match(r"computer science", ne):
