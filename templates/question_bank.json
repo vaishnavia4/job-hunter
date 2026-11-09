@@ -120,6 +120,17 @@
    "profile_key": "work_authorization.sponsorship_explanation"
   },
   {
+   "id": "status_renewal_eligible",
+   "category": "work_authorization",
+   "prompt": "Eligible to renew/extend your current immigration status or obtain another?",
+   "patterns": [
+    "eligible to (renew|extend) your (current )?status",
+    "(renew|extend) your current (visa|status) or obtain"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
    "id": "h1b_years",
    "category": "work_authorization",
    "prompt": "How many years have you been in the U.S. in H-1B status? (from profile work_authorization.h1b_status_start)",
