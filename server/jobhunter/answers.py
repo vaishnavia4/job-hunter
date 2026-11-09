@@ -34,6 +34,10 @@ AI_AGENT_NOTE = ("AI-agent disclosure question: never answer from the answer ban
 
 # Employer notices about THEIR use of AI to screen applications ("We use Greenhouse's AI-powered Talent Matching tool
 # to compare your application ...") are not questions about whether an AI agent is applying.
+EMPLOYER_AI_CONSENT_RX = re.compile(
+    r"\bi (consent|agree) to [\w&.' -]{1,40}? using (these |its |the )?(ai|artificial intelligence|automated)\b"
+    r"|\b[\w&.-]+ (may )?uses? (ai|artificial intelligence|automated tools)\b[^.?]{0,80}\b(screen|evaluat|review|identify|assess|compare|recommend)",
+    re.I)
 EMPLOYER_AI_NOTICE_RX = re.compile(
     r"\b(we|our (team|company|hiring team|recruiters?)|this (company|employer)|[A-Z][\w&.-]* (uses|leverages))\b[^.?]{0,40}"
     r"\b(use|uses|using|leverage|leverages|may use)\b[^.?]{0,80}"
@@ -47,7 +51,7 @@ def is_ai_agent_question(text):
     Sentences that only announce the EMPLOYER's own use of AI for screening are ignored."""
     t = text or ""
     for sent in re.split(r"(?<=[.?!])\s+|\n+", t):
-        if AI_AGENT_RX.search(sent) and not EMPLOYER_AI_NOTICE_RX.search(sent):
+        if AI_AGENT_RX.search(sent) and not EMPLOYER_AI_NOTICE_RX.search(sent) and not EMPLOYER_AI_CONSENT_RX.search(sent):
             return True
     return False
 STOP = set("a an the and or of to in for on at by with your you are is do does did have has will would be been being this that "

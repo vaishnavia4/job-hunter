@@ -25,6 +25,8 @@ MISSES = [
     "We use Greenhouse’s AI-powered Talent Matching tool to compare your application against our job requirements.",
     "Our hiring team may use AI tools to review and evaluate applications.",
     "By selecting Yes, I am consenting to the use of AI for evaluating my candidacy.",
+    "I consent to FIS using these AI tools to screen my resume, application and other information I provide:",
+    "FIS uses AI technologies to help it more effectively identify qualified individuals for open positions by screening information provided by the applicant.",
 ]
 
 
