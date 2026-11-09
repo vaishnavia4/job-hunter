@@ -339,6 +339,12 @@ def choose_option(answer, options, hints=None, strategy=""):
             if len(starts) == 1:
                 return starts[0], f"hint+start:{h}"
             return sorted(hits, key=len)[0], f"hint-multi:{h}"
+    # 3b. a long Yes/No answer ("Yes - I will require sponsorship now and in the future") on a plain Yes/No list
+    lead = re.match(r"(yes|no)\b", na)
+    if lead and na not in ("yes", "no") and not any(norm(o).startswith(na) for o in opts):
+        plain = [o for o in opts if norm(o) == lead[1]]
+        if len(plain) == 1:
+            return plain[0], "lead-polarity"
     # 4. yes / no polarity
     bank = _bank()
     if na in ("yes", "no"):
