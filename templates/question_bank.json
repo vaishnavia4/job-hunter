@@ -205,7 +205,8 @@
     "legally (authori[sz]ed|eligible|able) to work",
     "authori[sz]ed to work in the (united states|u\\.?s\\.?)",
     "eligible to work in the (united states|u\\.?s\\.?)",
-    "lawful(ly)? (authori[sz]ation|authori[sz]ed)"
+    "lawful(ly)? (authori[sz]ation|authori[sz]ed)",
+    "authori[sz]ed to work in the country"
    ],
    "type": "yes_no",
    "profile_key": "work_authorization.authorized_to_work_in_us",
@@ -458,6 +459,7 @@
     "have you (ever )?worked (at|for)",
     "ever been an employee",
     "former employee",
+    "(a |an )?(previous|former|past) (worker|employee|contractor)( or (contractor|worker|employee))? (of|at|for|with)",
     "current or former employee",
     "directly employed with"
    ],
@@ -531,7 +533,8 @@
    "prompt": "Have you ever served in the US military?",
    "patterns": [
     "(currently or have you ever |ever )served",
-    "served in the u\\.?s\\.? (military|armed)"
+    "served in the u\\.?s\\.? (military|armed)",
+    "(current or former|former|current) member of the (u\\.?s\\.? )?(military|armed forces)"
    ],
    "type": "yes_no",
    "profile_key": "eeo_voluntary.served_military",
@@ -1012,7 +1015,7 @@
    "category": "compensation",
    "prompt": "Current salary - share it, or decline? (Many states ban salary-history questions; default: decline/skip if optional.)",
    "patterns": [
-    "current (base )?(salary|compensation|pay)",
+    "current (base )?(salary|compensation|pay)(?! (requirement|expectation|range|desired))",
     "salary history"
    ],
    "type": "text",
@@ -1259,7 +1262,8 @@
    "category": "consents",
    "prompt": "Willing to undergo a background check?",
    "patterns": [
-    "background (check|investigation|screening)"
+    "background (check|investigation|screening)",
+    "criminal (record|background|history) (check|investigation|screening)"
    ],
    "type": "yes_no",
    "profile_key": "standard_answers.background_check_ok",
@@ -1352,6 +1356,29 @@
    "options_hint": [],
    "option_strategy": "",
    "notes": "Never answered from the bank (answers.AI_AGENT_RX catches it before any lookup). The agent fills everything else, stops before Submit and notifies the user. Either the user finishes and submits the form themselves (their own answer is then truthful), or the agent answers truthfully that an AI agent is applying. Never claim a human submitted an application the agent submitted."
+  },
+  {
+   "id": "english_proficiency",
+   "category": "personal",
+   "prompt": "English language proficiency level (self-assessment).",
+   "patterns": [
+    "proficiency (with|in) the english language",
+    "english (language )?proficiency",
+    "how well do you (speak|read|write) english"
+   ],
+   "type": "choice",
+   "profile_key": null
+  },
+  {
+   "id": "talent_pool_consent",
+   "category": "consent",
+   "prompt": "Consent for the employer to keep the application on file for other positions.",
+   "patterns": [
+    "consent to .{0,40}retain(ing)? my information",
+    "(retain|keep) my (information|application|resume) .{0,40}(other|future) (position|opening|role|opportunit)"
+   ],
+   "type": "choice",
+   "profile_key": null
   }
  ]
 }

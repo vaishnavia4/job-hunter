@@ -103,8 +103,12 @@ def equivalent(found, expected):
         return True
     # non-veteran variants: "I am not a protected veteran" = "I am not a veteran" = "No military service"
     # ("I identify as a veteran, just not a protected veteran" is NOT a match: it starts with "I identify as")
-    nonvet = re.compile(r"^(i am )?not a (protected )?veteran|^no military service|^i have not served|^i do not identify as a (protected )?veteran")
+    nonvet = re.compile(r"^(\d+ ?- ?)?((i am )?not a (protected )?veteran|no military service|i have not served|i did not serve|i do not identify as a (protected )?veteran)")
     if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
+        return True
+    # Yes/No "are you authorized to work ... (and can you provide documentation)": her status answer
+    # "Can work for any employer" means Yes (sponsorship questions are separate canonical questions)
+    if ne.startswith("can work for any employer") and nv == "yes":
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
@@ -120,8 +124,9 @@ def equivalent(found, expected):
     # "Bachelor of Science (B.S.)" satisfies a rule whose fallback is Bachelor of Science
     if re.match(r"bachelor of science\b", nv) and "bachelor of science" in ne:
         return True
-    # generic bachelor's wording ("Bachelors level degree", "Bachelor degree") satisfies "Bachelor's Degree" rules
-    if re.fullmatch(r"bachelor'?s?( level)?( degree)?( or equivalent)?", nv) and re.search(r"bachelor'?s degree", ne):
+    # generic bachelor's wording ("Bachelors level degree", "Bachelor degree", Equifax "Bachelor's or Equivalent Degree")
+    # satisfies "Bachelor's Degree" rules
+    if re.fullmatch(r"bachelor['’]?s?( level)?( or equivalent)?( degree)?( or equivalent)?( / college degree.*)?", nv) and re.search(r"bachelor'?s degree", ne):
         return True
     # Workday's standard field-of-study option for Computer Science
     if re.fullmatch(r"computer (and|&) information sciences?", nv) and re.match(r"computer science", ne):
