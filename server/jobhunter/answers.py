@@ -580,7 +580,8 @@ def verify_form(ws, fields):
         label, value = f.get("label", ""), (f.get("value") or "")
         nl, nv = norm(label), norm(str(value))
         # file uploads go in the right box
-        if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter|attach", nl):
+        # "Document Upload" = Workday's resume slot label at FINRA (2026-11-09)
+        if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter|attach|^(document|file)s? upload$", nl):
             if "cover letter" in nl and not re.search(r"resume|\bcv\b", nl) and re.match(r"resume", nv):
                 out["file_problems"].append({"label": label, "value": value, "problem": "Resume uploaded into the Cover Letter field"})
                 continue
@@ -760,7 +761,8 @@ def final_review(ws, review):
     for n in resume_names:
         if is_cover(n):
             problems.append(f"Cover letter file '{n}' is in the resume slot")
-        elif cslug and cslug not in flat(n) and n.lower() not in folder_resumes:
+        # resume names carry a truncated company slug ("Financial_Industry_Regulatory" for "...Authority"): match 20 chars
+        elif cslug and cslug[:20] not in flat(n) and n.lower() not in folder_resumes:
             problems.append(f"Resume file '{n}' does not contain the company name '{company}' - wrong tailored resume?")
     for f, val in cover_slots:
         if not val:
