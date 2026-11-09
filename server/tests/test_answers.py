@@ -27,6 +27,13 @@ CASES = [  # (label, options, expected status, expected value (option if options
     ("Are you legally authorized to work in the country where this role is located, for any employer?", ["Yes", "No"], "ok", "Yes"),
     ("Do you currently possess unrestricted lawful authorization to work in the U.S.? (If you begin employment, you will be required to provide proof of your identity and eligibility to work in the United States as a condition of employment.)", ["Select One", "Yes", "No"], "ok", "No"),
     ("U.S. Work Authorization Status", ["Can work for any employer", "Can work for current employer", "Seeking work authorization"], "ok", "Can work for any employer"),
+    # FIS 2026-11-09: "IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN" was picked via the hint "not a protected veteran"
+    ("Veterans Status", ["I AM NOT A VETERAN", "IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN",
+                         "IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF PROTECTED VETERANS", "I DO NOT WISH TO SELF-IDENTIFY"], "ok", "I AM NOT A VETERAN"),
+    ("Veterans Status", ["IDENTIFY AS A VETERAN, JUST NOT A PROTECTED VETERAN", "IDENTIFY AS ONE OR MORE OF THE CLASSIFICATIONS OF PROTECTED VETERANS",
+                         "I AM NOT A PROTECTED VETERAN", "I DO NOT WISH TO SELF-IDENTIFY"], "ok", "I AM NOT A PROTECTED VETERAN"),
+    # employer AI-screening consent: Vaishnavi's standing rule 2026-11-09 = No
+    ("I consent to FIS using these AI tools to screen my resume, application and other information I provide:", ["Yes", "No"], "ok", "No"),
     ("Race (*Please select one option that best describes how you identify*)*", RACE_GH, "ok", "Asian: South Asian"),
     ("Ethnicity", ETH_BENCHLING, "ok", ETH_BENCHLING[1]),
     ("Please select the Race/Ethnicity which most accurately describes how you identify yourself*", ["American Indian or Alaskan Native (United States of America)", "Asian (United States of America)", "White (United States of America)"], "ok", "Asian (United States of America)"),

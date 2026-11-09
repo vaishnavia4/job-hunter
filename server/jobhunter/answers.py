@@ -237,7 +237,7 @@ def _num(s):
 
 
 # polarity: an option asserting the opposite of the answer must never win
-POS_START_RX = re.compile(r"^(yes\b|i identify as\b|i am an? |i have an? |i do have\b|i am (hispanic|latino|latina|latinx)\b)")
+POS_START_RX = re.compile(r"^(yes\b|(i )?identify as\b|i am an? |i have an? |i do have\b|i am (hispanic|latino|latina|latinx)\b)")
 NEG_START_RX = re.compile(r"^(no\b|not\b|never\b|none\b|i (am|do|have|will|did) (not|never)\b|i (don't|haven't|won't|didn't)\b)")
 DEGREE_FAMILIES = (("bachelor", "bachelor"), ("master", "master"), ("associate", "associate"), ("doctor", r"doctor|phd|ph d"), ("mba", "mba"))
 DEGREE_FILLER = set("of in the degree degrees s and a an".split())
