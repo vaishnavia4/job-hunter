@@ -93,7 +93,14 @@ def find_verification(ws: Workspace, since_minutes=15, host_hint="", sender_hint
                         if when < after or not SUBJECT_RX.search(subj):
                             continue
                         msg = email.message_from_bytes(M.fetch(n, "(BODY.PEEK[])")[1][0][1])
-                        hit = parse(subj, _text(msg), host_hint)
+                        body = _text(msg)
+                        # with a host hint, only that tenant's mail counts (sender "<tenant>@otp.workday.com" or a link
+                        # on its host) - never another company's activation link received a few minutes earlier
+                        if host_hint:
+                            tenant = host_hint.lower().split(".")[0]
+                            if tenant not in (msg.get("From", "") + " " + " ".join(re.findall(r"https?://[^\s\"<>']+", body))).lower():
+                                continue
+                        hit = parse(subj, body, host_hint)
                         if hit and (best is None or when > best["received"]):
                             best = {**hit, "subject": subj, "from": msg.get("From", ""), "received": when, "folder": box.strip('"')}
         finally:
