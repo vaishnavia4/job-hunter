@@ -374,19 +374,35 @@
    "notes": ""
   },
   {
+   "id": "agree_not_disclose_confidential",
+   "category": "attestation",
+   "prompt": "I agree that I will not disclose or use confidential/proprietary information of others, including former employers.",
+   "patterns": [
+    "\\bi (agree|acknowledge|certify)\\b.{0,40}\\bnot (disclose|use|share|bring)\\b.{0,160}(confidential|proprietary|trade secret)"
+   ],
+   "type": "yes_no",
+   "profile_key": "",
+   "default": "Yes",
+   "options_hint": [
+    "^yes,? i agree",
+    "^i agree",
+    "^yes"
+   ],
+   "option_strategy": "",
+   "notes": "Attestation - pre-approved by Vaishnavi's standing consent (agree); report it."
+  },
+  {
    "id": "confidential_info",
    "category": "employment_history",
    "prompt": "Do you hold confidential information / trade secrets from a prior employer that relate to the new role?",
    "patterns": [
-    "confidential information",
-    "trade secret",
-    "proprietary information"
+    "^(?!.*\\bi (agree|acknowledge|certify|understand)\\b).*(confidential information|trade secret|proprietary information)"
    ],
    "type": "yes_no",
    "profile_key": "standard_answers.confidential_info_from_prior_employer",
    "options_hint": [],
    "option_strategy": "",
-   "notes": ""
+   "notes": "Not for 'I agree that I will not disclose ...' attestations (see agree_not_disclose_confidential)."
   },
   {
    "id": "relatives_at_company",

@@ -453,6 +453,11 @@ def lookup(ws, question_text, options=None):
     return res
 
 
+DISQUALIFY_RX = re.compile(
+    r"withdraws? (me|my application|my candidacy)? ?from consideration|\bi do not agree\b|\bnot agreeing\b"
+    r"|\bi do not (accept|consent|acknowledge)\b|\bdecline the (terms|agreement)\b")
+
+
 def _with_option(res, options, hints, strategy):
     if res["status"] != STATUS_OK or not options:
         return res
@@ -462,6 +467,11 @@ def _with_option(res, options, hints, strategy):
         res["status"] = AMBIG if how.startswith("ambiguous") else ASK
         res["confidence"] = 0.3
         res["note"] = (res.get("note") or "") + f" | could not map answer '{res['answer']}' to options ({how}) - ask the user, then record_answer() with options_hint."
+    elif DISQUALIFY_RX.search(norm(opt)):
+        # an option that refuses the employer's terms or withdraws the application is never chosen automatically
+        res["status"] = ASK
+        res["confidence"] = 0.2
+        res["note"] = (res.get("note") or "") + f" | matched option '{opt[:80]}' would refuse/withdraw - ask the user."
     else:
         res["option"] = opt
         res["confidence"] = round(min(res["confidence"], 0.99 if how in ("exact", "bracket-start") else 0.9), 2)
