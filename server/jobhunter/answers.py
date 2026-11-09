@@ -563,7 +563,7 @@ def verify_form(ws, fields):
         nl, nv = norm(label), norm(str(value))
         # file uploads go in the right box
         if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter|attach", nl):
-            if "cover letter" in nl and re.match(r"resume", nv):
+            if "cover letter" in nl and not re.search(r"resume|\bcv\b", nl) and re.match(r"resume", nv):
                 out["file_problems"].append({"label": label, "value": value, "problem": "Resume uploaded into the Cover Letter field"})
                 continue
             if re.search(r"resume|\bcv\b", nl) and "cover" not in nl and re.match(r"cover", nv):
@@ -655,7 +655,7 @@ def _page_flags(prof, text):
     want = _num(str(jp.get("desired_salary_answer") or prof.get("desired_salary_answer") or ""))
     if want:
         for line in text.splitlines():
-            if re.search(r"salary|compensation|pay expectation", line, re.I):
+            if re.search(r"salary|compensation|pay expectation", line, re.I) and len(line) < 220 and not re.search(r"veteran|disabilit|equal employment", line, re.I):
                 got = _num(line)
                 if got and not any(g == want[0] for g in got) and not (len(got) >= 2 and got[0] <= want[0] < got[1]):
                     out.append(f"Salary on page ({line.strip()[:80]}) does not match the stored answer ({want[0]})")
@@ -729,7 +729,7 @@ def final_review(ws, review):
              if f.get("kind") == "file" or re.search(r"resume|\bcv\b|cover letter", norm(f.get("label", "")))]
     resume_names = [val for f, val in slots if re.search(r"resume|\bcv\b", norm(f.get("label", ""))) and "cover" not in norm(f.get("label", "")) and val]
     resume_names = resume_names or [n for n in files if re.search(r"resume|\bcv\b", n, re.I) and not is_cover(n)]
-    cover_slots = [(f, val) for f, val in slots if "cover" in norm(f.get("label", ""))]
+    cover_slots = [(f, val) for f, val in slots if "cover" in norm(f.get("label", "")) and not re.search(r"resume|\bcv\b", norm(f.get("label", "")))]
     folder = None
     if cslug and ws.apps.exists():
         folder = next((d for d in sorted(ws.apps.iterdir()) if d.is_dir() and flat(d.name.split("_")[0])[:12] == cslug[:12]), None)
