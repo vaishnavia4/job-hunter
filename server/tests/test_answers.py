@@ -99,6 +99,7 @@ def main():
           ("Bachelor of Arts", "Bachelor of Engineering (B.E.) in Computer Science and Engineering", False),
           ("No", "None", True),
           ("Campus Career Site", "Company careers website", False),
+          ("Bachelor of Science (B.S.)", "Bachelor of Engineering (B.E.) in Computer Science and Engineering; if not offered: Bachelor's Degree, else Bachelor of Science (never Arts)", True),
           ("I do not identify as a Veteran", "No military service", True),
           ("I identify as a veteran, just not a protected veteran", "No military service", False),
           ("Yes - I am open to relocation", "Anywhere", True),

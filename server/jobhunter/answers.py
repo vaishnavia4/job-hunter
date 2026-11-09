@@ -113,6 +113,9 @@ def equivalent(found, expected):
     # degree pick lists with abbreviations only (GED/AA/BA/BS/MS...): "BS" satisfies a rule that allows Bachelor of Science
     if re.fullmatch(r"b\.? ?s\.?(c\.?)?", nv) and "bachelor of science" in ne:
         return True
+    # "Bachelor of Science (B.S.)" satisfies a rule whose fallback is Bachelor of Science
+    if re.match(r"bachelor of science\b", nv) and "bachelor of science" in ne:
+        return True
     # generic bachelor's wording ("Bachelors level degree", "Bachelor degree") satisfies "Bachelor's Degree" rules
     if re.fullmatch(r"bachelor'?s?( level)?( degree)?", nv) and re.search(r"bachelor'?s degree", ne):
         return True
