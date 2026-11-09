@@ -984,7 +984,8 @@
    "patterns": [
     "(office|in.person|on.?site).{0,60}(\\d|days|week|monday)",
     "hybrid (work )?model",
-    "days? (per|/|a) ?week"
+    "days? (per|/|a) ?week",
+    "(open|willing|able) to (be|being|work|working) in (the )?office every day"
    ],
    "type": "yes_no",
    "profile_key": "job_preferences.onsite_ok",
