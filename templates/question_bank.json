@@ -86,6 +86,7 @@
    "category": "work_authorization",
    "prompt": "'Do you possess UNRESTRICTED authorization to work in the US?' - Yes or No? (H-1B/OPT holders usually: No)",
    "patterns": [
+    "authori[sz]ed to work .{0,60}(ongoing|indefinite|permanent) (and )?(indefinite )?basis",
     "unrestricted"
    ],
    "type": "yes_no",
