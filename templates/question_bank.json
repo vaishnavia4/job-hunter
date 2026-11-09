@@ -278,7 +278,7 @@
    "prompt": "Are you a current or former employee of the company's outside auditor (e.g. PwC/Deloitte/EY/KPMG)?",
    "patterns": [
     "(employee|worked).{0,80}(outside |external )?auditor",
-    "price ?waterhouse|pwc"
+    "^(have|are|were|did) you.{0,60}(employ|work|partner|contract).{0,60}(pricewaterhouse|pwc)"
    ],
    "type": "yes_no",
    "profile_key": "standard_answers.pwc_or_auditor_employee",
@@ -923,6 +923,17 @@
    "notes": ""
   },
   {
+   "id": "nearest_office",
+   "category": "location",
+   "prompt": "Which of the employer's offices is closest to where you live?",
+   "patterns": [
+    "office (location )?(is )?(closest|nearest)",
+    "(closest|nearest) (office|location) to (you|your)"
+   ],
+   "type": "text",
+   "profile_key": null
+  },
+  {
    "id": "in_office_days",
    "category": "location",
    "prompt": "Are you able to work in the office N days/week (hybrid/on-site) if you relocate?",
@@ -1060,19 +1071,6 @@
    "notes": ""
   },
   {
-   "id": "notice_period",
-   "category": "availability",
-   "prompt": "Notice period:",
-   "patterns": [
-    "notice period"
-   ],
-   "type": "text",
-   "profile_key": "job_preferences.notice_period",
-   "options_hint": [],
-   "option_strategy": "",
-   "notes": ""
-  },
-  {
    "id": "degree",
    "category": "education",
    "prompt": "Highest degree (as it should appear in degree dropdowns). Fill even when optional?",
@@ -1197,12 +1195,27 @@
    "notes": ""
   },
   {
+   "id": "notice_period",
+   "category": "availability",
+   "prompt": "Notice period:",
+   "patterns": [
+    "notice period",
+    "how much notice",
+    "notice (must|do|will) you (need to )?(provide|give)",
+    "notice to your current employer"
+   ],
+   "type": "text",
+   "profile_key": "job_preferences.notice_period",
+   "options_hint": [],
+   "option_strategy": "",
+   "notes": ""
+  },
+  {
    "id": "current_employer",
    "category": "employment_history",
    "prompt": "Current / most recent employer:",
    "patterns": [
-    "current (or most recent )?(employer|company)",
-    "most recent employer"
+    "^(?!.*\\bnotice\\b)(?=.*(current (or most recent )?(employer|company)|most recent employer))"
    ],
    "type": "text",
    "profile_key": "experience.current_employer",
