@@ -57,6 +57,11 @@ def test_rejection():
     assert (c, ok) == ("rejected", True)
     c, ok, _ = R.classify("Unfortunately the position is closed", "")
     assert (c, ok) == ("rejected", True), "weak signal in the subject is decisive"
+    # Engine 2026-11-08: curly apostrophe + "won't", inside a "thank you for applying" email
+    c, ok, _ = R.classify("Update Regarding your Application – Engine", "Thank you for your interest in Engine! We truly "
+                          "appreciate the time and thought you put into applying. Unfortunately, we won’t be moving "
+                          "forward with your candidacy for the Senior Software Engineer, Infrastructure role at this time.")
+    assert (c, ok) == ("rejected", True), (c, ok)
 
 
 def test_confirmation_with_rejection_boilerplate_is_not_rejection():

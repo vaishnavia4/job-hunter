@@ -62,7 +62,8 @@ STOPWORDS = {"the", "inc", "llc", "corp", "corporation", "co", "company", "usa",
 RULES = [
     ("offer", 2, r"pleased to (extend|offer) you|(extend|extending) (you )?an? (formal |verbal )?offer|offer letter|"
                  r"your offer (of employment|package)|congratulations[^.]{0,60}\boffer\b"),
-    ("rejected", 2, r"not (to )?(be )?moving forward|will not be moving forward|decided (not )?to (move|proceed|pursue)[^.]{0,40}"
+    ("rejected", 2, r"not (to )?(be )?moving forward|(will not|won't) be moving forward|won't be (progressing|proceeding)|"
+                    r"decided not to (move|proceed) forward|decided (not )?to (move|proceed|pursue)[^.]{0,40}"
                     r"(other|another|different) (candidate|applicant|direction)|pursue other candidates|"
                     r"(other|another) candidates? (whose|who)|regret to inform|no longer (under consideration|being considered)|"
                     r"(were|was|have|has) not been selected|(were|was) not selected|position has (been|now been) filled|we (have|'ve) filled|"
@@ -97,8 +98,9 @@ def classify(subject, body=""):
     Order of precedence: offer > rejected > interview > action_needed > application_received > other.
     Confirmation emails often say 'next steps: we will reach out to schedule an interview' - weak interview
     words never override a clear 'thank you for applying', so those stay application_received."""
-    subj = subject or ""
-    text = f"{subj}\n{body or ''}"
+    curly = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"'})  # "won’t" -> "won't"
+    subj = (subject or "").translate(curly)
+    text = f"{subj}\n{(body or '').translate(curly)}"
     strong = {c: False for c in CLASSES}
     weak = {c: 0 for c in CLASSES}
     in_subj = {c: False for c in CLASSES}
