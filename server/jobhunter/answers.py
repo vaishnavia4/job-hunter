@@ -105,7 +105,7 @@ def equivalent(found, expected):
         return True
     # non-veteran variants: "I am not a protected veteran" = "I am not a veteran" = "No military service"
     # ("I identify as a veteran, just not a protected veteran" is NOT a match: it starts with "I identify as")
-    nonvet = re.compile(r"^(\d+ ?- ?)?((i am )?not a (protected )?veteran|no military service|i have not served|i did not serve|i do not identify as a (protected )?veteran)")
+    nonvet = re.compile(r"^(\d+ ?- ?)?((no, )?(i am )?not a (protected )?veteran|no military service|i have not served|i did not serve|i do not identify as a (protected )?veteran)")
     if nonvet.search(nv) and (nonvet.search(ne) or ne == "no"):
         return True
     # Yes/No "are you authorized to work ... (and can you provide documentation)": her status answer
@@ -690,8 +690,12 @@ def _flag_rules(prof):
 def _page_flags(prof, text):
     out = []
     text = text or ""
+    # EEO definition lists printed on the page ("American Indian or Alaska Native ... - A person having origins in ...",
+    # Tanium 2026-11-09) and VEVRAA veteran definitions are explanations, not selected values
+    flag_text = "\n".join(l for l in text.splitlines()
+                          if not re.search(r"\ba person (having|who|with) |\bmeans (a|any) veteran\b|\bis one of the following\b", l, re.I))
     for rx, msg in _flag_rules(prof):
-        m = re.search(rx, text, re.I)
+        m = re.search(rx, flag_text, re.I)
         if m:
             out.append(f"{msg} (found '{m.group(0)}')")
     # a current job must not carry an end date in the current/future month
@@ -710,6 +714,10 @@ def _page_flags(prof, text):
         for line in text.splitlines():
             if re.search(r"salary|compensation|pay expectation", line, re.I) and len(line) < 220 and not re.search(r"veteran|disabilit|equal employment", line, re.I):
                 got = _num(line)
+                # employer-stated range the candidate is asked to acknowledge ("...range is $155,000 - $185,000. Do you
+                # acknowledge/agree this aligns...?"): fine when the whole range is at/above her floor (Cohere 2026-11-09)
+                if got and re.search(r"acknowledge|agree|align|comfortable|okay with|accept", line, re.I) and min(got) >= want[0]:
+                    continue
                 if got and not any(g == want[0] for g in got) and not (len(got) >= 2 and got[0] <= want[0] < got[1]):
                     out.append(f"Salary on page ({line.strip()[:80]}) does not match the stored answer ({want[0]})")
     return out
@@ -736,6 +744,24 @@ def final_review(ws, review):
         if len(same) >= cap:
             problems.append(f"Daily cap reached: already {len(same)} application(s) to {company} today "
                             f"({', '.join(r.get('title', '')[:40] for r in same)}); limit is {cap} - do not submit, ask the user")
+    # Greenhouse employment/education blocks (IMC, SingleStore 2026-11-09) are resume facts, not bank questions: the bank's
+    # "start date" (= availability) wrongly matched "Start date month/year". Check them against the master resume instead.
+    EMP_RX = re.compile(r"^(company name|title|start date (month|year)|end date (month|year)|current role|school|degree|discipline)$")
+    emp = [f for f in fields if EMP_RX.match(norm(str(f.get("label", ""))))]
+    fields = [f for f in fields if f not in emp]
+    try:
+        mr = load_json(ws.profile_dir / "master_resume.json", {}) or {}
+        exps = mr.get("experience", []) or []
+        comps = [norm(str(e.get("company", ""))) for e in exps]; titles = [norm(str(e.get("title", ""))) for e in exps]
+        for f in emp:
+            lab, val = norm(str(f.get("label", ""))), norm(str(f.get("value", "")))
+            if lab == "company name" and val and not any(val in c or c.startswith(val) for c in comps):
+                problems_pre = f"Employment 'Company name' {f.get('value')!r} is not an employer in the master resume"
+                review.setdefault("_emp_problems", []).append(problems_pre)
+            if lab == "title" and val and val not in titles:
+                review.setdefault("_emp_problems", []).append(f"Employment 'Title' {f.get('value')!r} is not a title in the master resume")
+    except Exception:
+        pass
     v = verify_form(ws, fields)
     ai_q = list(v.get("hand_to_user", []))
     if not ai_q and is_ai_agent_question(review.get("page_text", "")):
@@ -783,7 +809,17 @@ def final_review(ws, review):
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
             continue
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
+    problems += review.pop("_emp_problems", [])
+    # required employment fields that are empty: only the end date of a current role may stay empty
+    cur_role = any(norm(str(f.get("label", ""))) == "current role" and norm(str(f.get("value", ""))) in ("checked", "yes", "true") for f in emp)
+    for f in emp:
+        lab, val = norm(str(f.get("label", ""))), norm(str(f.get("value", "")))
+        if f.get("required") and (not val or PLACEHOLDER_RX.match(val)) and not (cur_role and lab.startswith("end date")):
+            problems.append(f"Required field still a placeholder: {f.get('label')} = {f.get('value')!r}" if val
+                            else f"Required field empty: {f.get('label')}")
     for lab in v["missing_required"]:
+        if _ok_override(lab, ""):
+            continue
         problems.append(f"Required field empty: {lab}")
     for f in v["file_problems"]:
         problems.append(f"File problem '{f['label']}': {f['problem']}")
