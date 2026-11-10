@@ -10,6 +10,21 @@
  ],
  "questions": [
   {
+   "id": "comply_requirements",
+   "category": "agreement",
+   "prompt": "Will you be able to meet these requirements?",
+   "patterns": [
+    "(will you be able to|are you able to|can you|do you agree to) (meet|comply with|abide by) (these|the|this|our) (requirements?|polic(y|ies)|code)"
+   ],
+   "type": "choice",
+   "options_hint": [
+    "^yes"
+   ],
+   "option_strategy": "",
+   "notes": "compliance commitment (code of conduct / outside-business policy) - Huntington 2026-11-09; not the same as 'do you have outside business' (No)",
+   "default": "Yes"
+  },
+  {
    "id": "arbitration",
    "category": "legal",
    "prompt": "Arbitration agreements: these waive court/jury rights. You must tick these yourself each time.",
@@ -841,7 +856,7 @@
    "category": "contact",
    "prompt": "Phone number:",
    "patterns": [
-    "phone",
+    "^(?!.*\\binterview).*\\bphone\\b",
     "mobile number"
    ],
    "type": "text",
@@ -1111,7 +1126,8 @@
     "expected (base )?(salary|compensation|pay)",
     "compensation expectation",
     "salary requirement",
-    "desired base"
+    "desired base",
+    "pay expectation"
    ],
    "type": "number",
    "profile_key": "job_preferences.desired_salary_answer",
@@ -1174,7 +1190,7 @@
    "category": "education",
    "prompt": "Highest degree (as it should appear in degree dropdowns). Fill even when optional?",
    "patterns": [
-    "\\bdegree\\b",
+    "^(?!.*\\b(opt|stem|extension)\\b).*\\bdegree\\b",
     "highest (level of )?education",
     "education level"
    ],
@@ -1290,7 +1306,7 @@
    "type": "number",
    "profile_key": "experience.years_total",
    "options_hint": [],
-   "option_strategy": "",
+   "option_strategy": "bracket",
    "notes": ""
   },
   {

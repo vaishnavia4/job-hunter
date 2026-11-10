@@ -182,6 +182,20 @@ def equivalent(found, expected):
         lo, hi = float(rng[1].replace(",", "")), float(rng[2].replace(",", ""))
         if lo <= amt <= hi:
             return True
+    # open-ended salary brackets: page "Greater than $125,000" / "$150,000+" contains the expected amount (Baxter 2026-11-09)
+    if amt is not None:
+        m = re.match(r"(?:greater than|more than|over|above)\s*\$?\s*([\d,]{4,})|\$?\s*([\d,]{4,})\s*(?:\+|and (?:above|up|over))", str(found).strip().lower())
+        if m and amt >= float((m[1] or m[2]).replace(",", "")):
+            return True
+    # years brackets: page "7-10 years of experience" / "10+ years" contains the expected number of years (8)
+    if re.fullmatch(r"\d{1,2}", ne):
+        yrs = int(ne)
+        m = re.match(r"(\d{1,2})\s*(?:-|to|–)\s*(\d{1,2})\s*(\+\s*)?years?\b", nv)
+        if m and int(m[1]) <= yrs <= int(m[2]):
+            return True
+        m = re.match(r"(\d{1,2})\s*\+\s*years?\b|(more than|over) (\d{1,2}) years?\b", nv)
+        if m and yrs >= int(m[1] or m[3]):
+            return True
     # yes/no prefixes: "No, I do not have a disability..." = "No"
     for a, b in ((nv, ne), (ne, nv)):
         if b in ("yes", "no") and re.match(re.escape(b) + r"(\W|$)", a):
@@ -287,7 +301,9 @@ def _conflicts(option, pol):
     """True when `option` asserts the opposite of an answer with polarity `pol`."""
     n = norm(option)
     if pol < 0:
-        return bool(POS_START_RX.match(n))
+        # "Veteran but Not a Protected Veteran" / "Protected Veteran" assert veteran status even though they contain
+        # "not a protected veteran" (Danaher 2026-11-09 picked it for a non-veteran)
+        return bool(POS_START_RX.match(n)) or bool(re.match(r"(protected |disabled |armed forces |recently separated )?veteran\b", n))
     if pol > 0:
         return bool(NEG_START_RX.match(n)) or bool(DECLINE_RX.search(n))
     return False
@@ -505,6 +521,10 @@ def lookup(ws, question_text, options=None):
     if val not in (None, ""):
         res.update(answer=str(val), source="profile:" + q["profile_key"], confidence=0.75, status=STATUS_OK)
         return _with_option(res, options, hints, q.get("option_strategy", ""))
+    # 4. template default (only for generic, person-independent commitments such as "can you meet these requirements?")
+    if q.get("default") not in (None, ""):
+        res.update(answer=str(q["default"]), source="template_default", confidence=0.8, status=STATUS_OK, note=q.get("notes", ""))
+        return _with_option(res, options, hints, q.get("option_strategy", ""))
     res["note"] = f"No stored answer for '{q['id']}' - ask the user ({q['prompt']}), then record_answer()."
     return res
 
@@ -676,6 +696,7 @@ def _flag_rules(prof):
     eeo = prof.get("eeo_voluntary", {}) or {}
     edu = json.dumps(prof.get("education", {}) or {}).lower()
     rules = [(r"\bi identify as (a|one or more)\b", "Veteran option 'I identify as a veteran...' is selected (should be a not-a-veteran / decline option)"),
+             (r"\bveteran but not a protected veteran\b", "Veteran option 'Veteran but Not a Protected Veteran' is selected (she is not a veteran)"),
              (r"\byes,? i have a disability\b", "Disability answered 'Yes, I have a disability'"),
              (r"\berror\b|\bmust not be empty\b|\binvalid\b", "The page shows an error / validation message")]
     if "arts" not in edu:
@@ -733,6 +754,10 @@ def final_review(ws, review):
     company = review.get("company", "")
     prof = ws.profile() or {}
     problems = []
+    # the same file attached twice = an older upload the ATS kept (KLA 2026-11-09: previous job's same-named resume)
+    dups = sorted({f for f in files if files.count(f) > 1})
+    if dups:
+        problems.append(f"File attached more than once (an older upload is still attached - remove it): {', '.join(dups)}")
     # daily per-company cap (config/search.json max_per_company_per_day): count today's applied rows, any submitter
     cap = (load_json(ws.config / "search.json", {}) or {}).get("max_per_company_per_day", 2)
     ckey = lambda s: re.sub(r"\b(inc|llc|corp|corporation|co|company|ltd|enterprise|the)\b|[^a-z0-9]", "", norm(s or ""))

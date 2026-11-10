@@ -65,7 +65,10 @@ def find_verification(ws: Workspace, since_minutes=15, host_hint="", sender_hint
     c = _creds(ws)
     after = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
     deadline = time.time() + max(0, wait_seconds)
-    senders = [sender_hint] if sender_hint else SENDERS
+    senders = [sender_hint] if sender_hint else list(SENDERS)
+    # tenants with their own mail domain (KLA: KLAHR@workday.kla.com, 2026-11-09) match none of the generic senders
+    if host_hint and not sender_hint:
+        senders.append(host_hint.lower().split(".")[0])
     while True:
         M = imaplib.IMAP4_SSL("imap.gmail.com")
         M.login(c["email"], c["app_password"].replace(" ", ""))
@@ -76,7 +79,9 @@ def find_verification(ws: Workspace, since_minutes=15, host_hint="", sender_hint
                     continue
                 seen = set()
                 for s in senders:
-                    typ, d = M.search(None, f'(SINCE {after.strftime("%d-%b-%Y")} FROM "{s}")')
+                    # IMAP SINCE is a DATE in the server's zone (Gmail: Pacific) - search a day earlier and let the
+                    # exact `when < after` check below filter; a UTC date missed mail sent 16:00-24:00 Pacific (F5/KLA 2026-11-09)
+                    typ, d = M.search(None, f'(SINCE {(after - timedelta(days=1)).strftime("%d-%b-%Y")} FROM "{s}")')
                     for n in (d[0].split() if d and d[0] else []):
                         if n in seen:
                             continue
