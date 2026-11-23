@@ -53,6 +53,8 @@ def detect_ats(url):
         return "workday"
     if "greenhouse.io" in u or "gh_jid=" in u:
         return "greenhouse"
+    if "ashbyhq.com" in u:
+        return "ashby"
     return "other"
 
 
@@ -640,6 +642,58 @@ def greenhouse(ws, run, submit):
     return run.done("needs_claude", detail=("email security code requested: " if sb.get("needs_code") else "submit not confirmed: ") + json.dumps(sb)[:400])
 
 
+# ---------------------------------------------------------------- Ashby
+def _contact(ws):
+    prof = ws.profile() or {}
+    c = prof.get("contact") or prof.get("personal") or prof
+    name = c.get("full_name") or c.get("name") or " ".join(x for x in (c.get("first_name"), c.get("last_name")) if x)
+    return name or "", c.get("email") or ""
+
+
+def ashby(ws, run, submit):
+    """Single-page Ashby form (jobs.ashbyhq.com/<org>/<job>/application). Same stages as Greenhouse."""
+    url = (run.row.get("apply_url") or run.row.get("url") or "").split("?")[0].rstrip("/")
+    if not url.endswith("/application"):
+        url += "/application"
+    run.host = url.split("/")[2]
+    name, email = _contact(ws)
+    if not name or not email:
+        return run.done("error", detail="name/email not found in profile.json (contact)")
+    fill = (RUNNER / "ash_fill.js").read_text(encoding="utf8").replace("__RESUME__", str(run.resume).replace(chr(92), "/"))         .replace("__COVER__", str(run.cover).replace(chr(92), "/") if run.cover else "").replace("__NAME__", _js(name)).replace("__EMAIL__", _js(email))
+    r = run.page(text=fill, goto=url, name="fill", timeout=600, keep=True) or {}
+    if not isinstance(r, dict):
+        return run.done("needs_claude", detail="unexpected fill output: " + str(r)[:300])
+    run.note(f"filled {len(r.get('filled') or [])} fields")
+    needs = [{k: (v[:12] if isinstance(v, list) else v) for k, v in q.items() if v not in (None, "", [])} for q in (r.get("needs_user") or [])]
+    if needs or r.get("errors"):
+        return run.done("needs_answers", questions=needs, errors=[str(e)[:160] for e in (r.get("errors") or [])][:8],
+                        how="record answers, then run apply again: it continues on the open form")
+    rev = (RUNNER / "ash_review.js").read_text(encoding="utf8")
+    for k, v in (("__FOLDER__", run.folder.name), ("__COMPANY__", _js(run.row["company"])), ("__TITLE__", _js(run.row["title"])), ("__JOBID__", run.row["job_id"])):
+        rev = rev.replace(k, v)
+    rv = run.page(text=rev, name="review") or {}
+    res, probs = _final_check(ws, run)
+    if isinstance(rv, dict) and rv.get("empty_required"):
+        probs.append("empty required fields: " + "; ".join(rv["empty_required"])[:300])
+    if probs:
+        return run.done("final_check_failed", problems=[p[:300] for p in probs][:12])
+    table = [f"{x['field'][:60]} = {str(x['value'])[:50]}" for x in (res.get("summary_table") or [])][:40]
+    if not submit:
+        run.page(screenshot=run.folder / "review_before_submit.png", name="shot")
+        return run.done("ready", files=rv.get("files") if isinstance(rv, dict) else None, summary=table, skipped=r.get("skipped"),
+                        detail="final check passed; stopped before Submit (--no-submit)")
+    done = _already_confirmed(ws, run)
+    if done:
+        return done
+    sb = run.page(RUNNER / "ash_submit.js") or {}
+    if sb.get("submitted"):
+        _mark_applied(ws, run)
+        return run.done("applied", fields_checked=len(table), skipped=r.get("skipped"))
+    if sb.get("captcha") or sb.get("spam_flag"):
+        return run.done("blocked", detail="Ashby stopped the submission (captcha / spam check): she submits this one from her own browser. " + str(sb.get("text"))[:200])
+    return run.done("needs_claude", detail="submit not confirmed: " + json.dumps(sb)[:400])
+
+
 # ---------------------------------------------------------------- entry point
 def apply(ws, target, submit=None):
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
@@ -674,7 +728,7 @@ def apply(ws, target, submit=None):
     ats = detect_ats(row.get("apply_url") or row.get("url"))
     if ats == "other":
         return run.done("needs_claude", detail=f"no token-free runner for this site yet ({row.get('ats')}): use the browser tools")
-    missing = [f for f in (("wd_auth.js", "wd_myinfo.js", "wd_auto.js", "wd_review.js") if ats == "workday" else ("gh_fill.js", "gh_review.js"))
+    missing = [f for f in (("wd_auth.js", "wd_myinfo.js", "wd_auto.js", "wd_review.js") if ats == "workday" else () if ats == "ashby" else ("gh_fill.js", "gh_review.js"))
                if not (_scripts(ws) / f).exists()]
     if missing:
         return run.done("error", detail="page scripts missing in .playwright-mcp: " + ", ".join(missing))
@@ -682,6 +736,6 @@ def apply(ws, target, submit=None):
         return run.done("error", detail="could not start Chrome with remote debugging (set JH_CHROME to chrome.exe)")
     _serve(ANSWER_PORT, _json_handler(post=_answer_post(ws)))
     try:
-        return (workday if ats == "workday" else greenhouse)(ws, run, submit)
+        return {"workday": workday, "ashby": ashby}.get(ats, greenhouse)(ws, run, submit)
     except Exception as e:
         return run.done("error", detail=f"{type(e).__name__}: {str(e)[:400]}")

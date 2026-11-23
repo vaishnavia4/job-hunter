@@ -82,6 +82,9 @@ def _canon(s):
     # "Campus Career Site" / "University career site" are student-recruiting channels, not the company's own site
     if CAREERS_RX.match(n) and not re.search(r"\b(campus|university|college|job board|internal|student)\b", n):
         return "company careers website"
+    # one-word option values such as "ThomsonReutersCareerWebsite" (Thomson Reuters 2026-11-23)
+    if re.fullmatch(r"[a-z0-9&.'-]{3,40}careers?(website|site|page)", n) and not re.search(r"campus|university|college|student|internal", n):
+        return "company careers website"
     return n
 
 
@@ -576,7 +579,7 @@ def _with_option(res, options, hints, strategy):
         res["status"] = AMBIG if how.startswith("ambiguous") else ASK
         res["confidence"] = 0.3
         res["note"] = (res.get("note") or "") + f" | could not map answer '{res['answer']}' to options ({how}) - ask the user, then record_answer() with options_hint."
-    elif DISQUALIFY_RX.search(norm(opt)) and not (res.get("question_id") == "employer_ai_screening_consent" and res.get("source") == "user_correction"):
+    elif DISQUALIFY_RX.search(norm(opt)) and not (res.get("source") == "user_correction" and (res.get("question_id") == "employer_ai_screening_consent" or equivalent(opt, str(res.get("answer") or "")))):
         # (declining the employer's AI screening is the user's own standing answer: that refusal is allowed)
         # an option that refuses the employer's terms or withdraws the application is never chosen automatically
         res["status"] = ASK

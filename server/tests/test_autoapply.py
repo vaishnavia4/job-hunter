@@ -8,7 +8,8 @@ from jobhunter import tailor as T
 def test_detect_ats():
     assert A.detect_ats("https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/X_R1") == "workday"
     assert A.detect_ats("https://job-boards.greenhouse.io/acme/jobs/123") == "greenhouse"
-    assert A.detect_ats("https://jobs.ashbyhq.com/acme/1") == "other"
+    assert A.detect_ats("https://jobs.ashbyhq.com/acme/1") == "ashby"
+    assert A.detect_ats("https://jobs.lever.co/acme/1") == "other"
 
 
 def test_apply_url():
