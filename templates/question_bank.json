@@ -266,7 +266,8 @@
     "authori[sz]ed to work in the (united states|u\\.?s\\.?)",
     "eligible to work in the (united states|u\\.?s\\.?)",
     "lawful(ly)? (authori[sz]ation|authori[sz]ed)",
-    "authori[sz]ed to work in the country"
+    "authori[sz]ed to work in the country",
+    "eligible to work legally"
    ],
    "type": "yes_no",
    "profile_key": "work_authorization.authorized_to_work_in_us",
@@ -575,7 +576,7 @@
    "category": "sourcing",
    "prompt": "How did you hear about this job? (default: the company's careers site)",
    "patterns": [
-    "how did you (hear|find|learn)",
+    "how did you (initially |first |originally )?(hear|find|learn)",
     "where did you (hear|find|see)",
     "^source\\b",
     "how did you come across"
@@ -584,6 +585,7 @@
    "profile_key": "standard_answers.how_did_you_hear",
    "options_hint": [
     "^(?!.*\\b(campus|university|college)\\b).*careers? (site|website|page)",
+    "^(?!.*\b(campus|university|college|job board|recruit)\b)[\\w&.' -]{2,30} (website|web site)$",
     "company (website|site)",
     "\\.com/careers",
     "^website$",
@@ -1020,7 +1022,8 @@
     "(office|in.person|on.?site).{0,60}(\\d|days|week|monday)",
     "hybrid (work )?model",
     "days? (per|/|a) ?week",
-    "(open|willing|able) to (be|being|work|working) in (the )?office every day"
+    "(open|willing|able) to (be|being|work|working) in (the )?office every day",
+    "regularly commute"
    ],
    "type": "yes_no",
    "profile_key": "job_preferences.onsite_ok",
@@ -1516,7 +1519,8 @@
    "prompt": "Consent for the employer to keep the application on file for other positions.",
    "patterns": [
     "consent to .{0,40}retain(ing)? my information",
-    "(retain|keep) my (information|application|resume) .{0,40}(other|future) (position|opening|role|opportunit)"
+    "(retain|keep) my (information|application|resume) .{0,40}(other|future) (position|opening|role|opportunit)",
+    "retain my (data|information) for future (opportunit|position|opening|role)"
    ],
    "type": "choice",
    "profile_key": null

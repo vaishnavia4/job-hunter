@@ -27,9 +27,27 @@ function loadPlaywright() {
     const ctx = browser.contexts()[0];
     const pages = ctx.pages().filter(p => !/^(devtools|chrome-extension):/.test(p.url()));
     const host = arg('host');
-    let page = (host && [...pages].reverse().find(p => p.url().includes(host))) || pages[pages.length - 1] || await ctx.newPage();
+    // One tab per job (JH_TAB = "jh:<job_id>", kept in window.name, which survives navigation): an application that
+    // is waiting for an answer or for the user is never navigated away by the next job, and a rerun continues on the
+    // page as it stands instead of reloading a filled form (Vaishnavi 2026-11-23).
     const go = process.env.JH_GOTO;
-    if (go) { await page.goto(go, { waitUntil: 'domcontentloaded', timeout: 60000 }); await page.waitForTimeout(2500); }
+    const tab = process.env.JH_TAB || (go ? 'jh:scratch' : '');
+    const nameOf = async p => { try { return await p.evaluate(() => window.name); } catch (e) { return ''; } };
+    let page = null, navigated = false;
+    if (process.argv.includes('--newtab')) page = await ctx.newPage();
+    if (!page && tab) {
+      const names = []; for (const p of pages) names.push(await nameOf(p));
+      page = pages[names.indexOf(tab)] || null;
+      if (!page) {
+        const blank = pages.find((p, k) => !names[k].startsWith('jh:') && /^(about:blank|chrome:\/\/new-?tab)/.test(p.url()));
+        page = blank || await ctx.newPage();
+        if (!go) page = (host && [...pages].reverse().find(p => p.url().includes(host))) || page;  // tab lost its name (confirmation page): fall back to the host
+      }
+    }
+    if (!page) page = (host && [...pages].reverse().find(p => p.url().includes(host))) || pages[pages.length - 1] || await ctx.newPage();
+    const samePage = u => u.split(/[?#]/)[0].replace(/\/$/, '') === go.split(/[?#]/)[0].replace(/\/$/, '') && (!go.includes('token=') || u === go);
+    if (go && !(process.env.JH_KEEP && samePage(page.url()))) { await page.goto(go, { waitUntil: 'domcontentloaded', timeout: 60000 }); await page.waitForTimeout(2500); navigated = true; }
+    if (tab) await page.evaluate(t => { window.name = t; }, tab).catch(() => {});
     await page.bringToFront().catch(() => {});
     let result = null;
     const file = arg('script');
@@ -41,7 +59,8 @@ function loadPlaywright() {
     }
     const shot = arg('screenshot');
     if (shot) await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
-    out({ ok: true, host: (page.url().split('/')[2] || ''), path: page.url().split('?')[0].split('/').slice(3).join('/').slice(0, 160), result });
+    if (process.argv.includes('--close')) { if (ctx.pages().length < 2) await ctx.newPage(); await page.close().catch(() => {}); }
+    out({ ok: true, host: (page.url().split('/')[2] || ''), path: page.url().split('?')[0].split('/').slice(3).join('/').slice(0, 160), navigated, result });
   } catch (e) {
     out({ ok: false, error: String(e && e.message || e).slice(0, 500) });
     code = 1;

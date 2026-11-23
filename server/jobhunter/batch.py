@@ -13,7 +13,7 @@ from .workspace import Workspace, today
 def _tier(r):
     """Her priority (2026-11-23): Colorado/Denver and remote jobs go first, everything else after."""
     t = ((r.get("flags") or "") + " " + (r.get("location") or "")).lower()
-    return 0 if re.search(r"colorado|denver|boulder|englewood|,\s*co|remote|work from home", t) else 1
+    return 0 if re.search(r"colorado|denver|boulder|englewood|,\s*co\b|remote|work from home", t) else 1
 
 
 def _pay(r):

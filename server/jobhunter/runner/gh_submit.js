@@ -3,6 +3,8 @@ async (page) => {
   const norm = s => (s || '').replace(/\s+/g, ' ').trim();
   const b = page.locator('button[type=submit]:has-text("Submit"), button:has-text("Submit application")').first();
   if (!(await b.count())) return JSON.stringify({ submitted: false, detail: 'no Submit button' });
+  // code boxes already on the page (Submit stays disabled until the emailed code is typed): go straight to the code step
+  if (await page.locator('input[id^="security-input-"]:visible').count()) return JSON.stringify({ submitted: false, captcha: false, needs_code: true, errors: [], text: 'security code boxes shown' });
   await b.click();
   let t = '';
   for (let i = 0; i < 12; i++) {

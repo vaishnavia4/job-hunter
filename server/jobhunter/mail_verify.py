@@ -116,3 +116,41 @@ def find_verification(ws: Workspace, since_minutes=15, host_hint="", sender_hint
             return best
         log(f"no verification email yet; checking again in {poll}s")
         time.sleep(poll)
+
+
+def find_greenhouse_code(ws: Workspace, company="", since_minutes=10, wait_seconds=120, poll=8):
+    """Newest Greenhouse "Security code for your application to <Company>" email -> the code string, or None.
+    The code is returned to the caller only (never logged or printed)."""
+    c = _creds(ws)
+    after = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
+    deadline = time.time() + max(0, wait_seconds)
+    key = re.sub(r"[^a-z0-9]+", " ", (company or "").lower()).split()[:1]
+    while True:
+        M = imaplib.IMAP4_SSL("imap.gmail.com")
+        M.login(c["email"], c["app_password"].replace(" ", ""))
+        best = None
+        try:
+            for box in ('"[Gmail]/All Mail"', '"[Gmail]/Spam"'):
+                if M.select(box, readonly=True)[0] != "OK":
+                    continue
+                typ, d = M.search(None, f'(SINCE {(after - timedelta(days=1)).strftime("%d-%b-%Y")} FROM "greenhouse" SUBJECT "Security code")')
+                for n in (d[0].split() if d and d[0] else [])[-8:]:
+                    msg = email.message_from_bytes(M.fetch(n, "(BODY.PEEK[])")[1][0][1])
+                    try:
+                        when = parsedate_to_datetime(msg.get("Date"))
+                    except Exception:
+                        continue
+                    if when.tzinfo is None:
+                        when = when.replace(tzinfo=timezone.utc)
+                    subj = str(make_header(decode_header(msg.get("Subject", ""))))
+                    if when < after or (key and key[0] not in subj.lower()):
+                        continue
+                    plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", _text(msg)))
+                    m = re.search(r"security code field[^:]{0,60}:\s*([A-Za-z0-9]{6,12})\b", plain, re.I)
+                    if m and (best is None or when > best[0]):
+                        best = (when, m.group(1))
+        finally:
+            M.logout()
+        if best or time.time() >= deadline:
+            return best[1] if best else None
+        time.sleep(poll)

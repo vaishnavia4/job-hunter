@@ -98,6 +98,10 @@ def equivalent(found, expected):
     nv, ne = norm(found), norm(expected)
     if not nv or not ne:
         return False
+    if nv == "checked" and ne in ("yes", "true", "checked", "i agree", "agree"):  # a ticked consent box (Greenhouse review)
+        return True
+    if re.match(r"\d{1,2}[.)]\s+\D", nv):  # numbered options: "1. Woman" (Cisco 2026-11-23)
+        return equivalent(re.sub(r"^\d{1,2}[.)]\s+", "", nv), expected)
     if nv == ne or _canon(nv) == _canon(ne):
         return True
     # decline variants: "I don't wish to answer" = "Decline to self-identify" = "Prefer not to say"
@@ -711,7 +715,8 @@ def _flag_rules(prof):
     """(regex, message) red flags that must never appear on a review page; personal ones come from the profile."""
     eeo = prof.get("eeo_voluntary", {}) or {}
     edu = json.dumps(prof.get("education", {}) or {}).lower()
-    rules = [(r"\bi identify as (a|one or more)\b", "Veteran option 'I identify as a veteran...' is selected (should be a not-a-veteran / decline option)"),
+    rules = [(r"\bi identify as (a|one or more)\b[^\n]{0,80}\bveterans?\b",  # not "I identify as a first-generation professional" (Gusto)
+"Veteran option 'I identify as a veteran...' is selected (should be a not-a-veteran / decline option)"),
              (r"\bveteran but not a protected veteran\b", "Veteran option 'Veteran but Not a Protected Veteran' is selected (she is not a veteran)"),
              (r"\byes,? i have a disability\b", "Disability answered 'Yes, I have a disability'"),
              (r"\berror\b|\bmust not be empty\b|\binvalid\b", "The page shows an error / validation message")]
@@ -873,7 +878,7 @@ def final_review(ws, review):
     # files: resume carries the company slug; cover-letter slot holds a CoverLetter file
     cslug = re.sub(r"[^a-z0-9]", "", norm(company))[:30]
     flat = lambda n: re.sub(r"[^a-z0-9]", "", n.lower())
-    is_cover = lambda n: bool(re.search(r"cover|coverletter", n.replace("_", " "), re.I))  # word only: "Discovery" contains "cover" (WBD 2026-11-10)
+    is_cover = lambda n: bool(re.search(r"\bcover\b|coverletter", n.replace("_", " "), re.I))  # word only: "Discovery" contains "cover" (WBD 2026-11-10)
     # file slots: explicit file fields, or SHORT labels naming a resume/CV/cover letter. A long question that merely
     # mentions "resume" (FIS: "...AI tools to screen my resume, application...") is not an upload slot.
     slots = [(f, str(f.get("value") or "")) for f in fields

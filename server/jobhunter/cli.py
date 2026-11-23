@@ -25,6 +25,7 @@
   final-check <review.json>    last pre-submit re-verification (fields, files, page text red flags)
   selfcheck                    compile every package module (syntax guard)
   responses [--days N] [--dry-run]  read employer replies in Gmail, classify, update tracker
+  daily [--days 21] [--no-mail] [--open]  morning check: read replies, analyse rejections, write reports/daily_<date>.md + tracker.html
   report [--days 7] [--out reports]  weekly funnel/response report (+ Weekly sheet in tracker.xlsx)
   prep <folder|job_id>         write interview_prep.md for an application
 """
@@ -75,6 +76,7 @@ def main(argv=None):
     hi = sub.add_parser("h1b-import"); hi.add_argument("--years", default="2022,2023")
     hl = sub.add_parser("h1b"); hl.add_argument("company")
     rs = sub.add_parser("responses"); rs.add_argument("--days", type=int, default=14); rs.add_argument("--dry-run", action="store_true")
+    dl = sub.add_parser("daily"); dl.add_argument("--days", type=int, default=21); dl.add_argument("--no-mail", action="store_true"); dl.add_argument("--open", action="store_true")
     wr = sub.add_parser("report"); wr.add_argument("--days", type=int, default=7); wr.add_argument("--out", default="reports")
     ip = sub.add_parser("prep"); ip.add_argument("target", help="application folder or tracker job_id")
     tl = sub.add_parser("tailor"); tl.add_argument("target", help="tracker job_id or application folder"); tl.add_argument("--model", default="sonnet"); tl.add_argument("--level", choices=["auto", "low", "medium", "high"]); tl.add_argument("--force", action="store_true")
@@ -195,6 +197,14 @@ def main(argv=None):
         _out(res.pop("digest"))
         _p({k: v for k, v in res.items() if k != "results"} | {"results": [
             {k: r[k] for k in ("date", "class", "confident", "companies", "subject", "status_change")} for r in res["results"]]})
+    elif a.cmd == "daily":
+        from . import daily
+        res = daily.daily(ws, days=a.days, read_mail=not a.no_mail, log=lambda m: print(m, file=sys.stderr))
+        if a.open:
+            import webbrowser
+            from pathlib import Path
+            webbrowser.open(Path(res["tracker_page"]).as_uri())
+        print(json.dumps(res, indent=2, ensure_ascii=True))
     elif a.cmd == "report":
         from . import report
         res = report.weekly_report(ws, days=a.days, out_dir=a.out)

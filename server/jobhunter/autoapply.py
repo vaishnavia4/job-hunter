@@ -159,7 +159,7 @@ class Run:
     def note(self, s):
         self.steps.append(s)
 
-    def page(self, script=None, goto=None, screenshot=None, timeout=600, text=None, name="step"):
+    def page(self, script=None, goto=None, screenshot=None, timeout=600, text=None, name="step", keep=False, close=False):
         """Run one page function (file path, or `text` written to the work dir). Returns the script's result."""
         if text is not None:
             script = self.work / f"_{name}.js"
@@ -171,10 +171,17 @@ class Run:
             cmd += ["--script", str(script)]
         if screenshot:
             cmd += ["--screenshot", str(screenshot)]
+        if close:
+            cmd += ["--close"]
         env = dict(os.environ)
-        env.pop("JH_GOTO", None)
+        for k in ("JH_GOTO", "JH_KEEP", "JH_TAB"):
+            env.pop(k, None)
         if goto:
             env["JH_GOTO"] = goto
+        if keep:
+            env["JH_KEEP"] = "1"  # same form already open in this job's tab: continue on it, do not reload
+        if getattr(self, "row", None):
+            env["JH_TAB"] = "jh:" + self.row["job_id"]  # one browser tab per job
         try:
             p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout, env=env)
             line = (p.stdout or "").strip().splitlines()[-1] if (p.stdout or "").strip() else ""
@@ -319,7 +326,7 @@ def _mark_applied(ws, run, extra=""):
     shots = run.folder / "screenshots"
     shots.mkdir(exist_ok=True)
     try:
-        run.page(screenshot=shots / "submitted_confirmation.png", name="shot")
+        run.page(screenshot=shots / "submitted_confirmation.png", name="shot", close=True)  # done: free the tab
     except Exception:
         pass
     note = (run.row.get("notes") or "").strip()
@@ -328,6 +335,36 @@ def _mark_applied(ws, run, extra=""):
 
 
 # ---------------------------------------------------------------- Workday
+_URL = {}
+
+
+def _reset_password(ws, run, sd, url):
+    """Forgot-password flow: request the mail, read the reset link from her mailbox (served to the page script over
+    127.0.0.1, never logged), set this tenant's saved password, go back to the application. One try per run."""
+    from . import mail_verify
+    run.reset_done = True
+    run.page(goto=url, name="back to sign-in")
+    r = run.page(RUNNER / "wd_forgot.js") or {}
+    if not isinstance(r, dict) or r.get("state") == "error" or r.get("captcha"):
+        run.reset_note = "forgot-password form: " + str(r)[:160]
+        return False
+    hit = mail_verify.find_verification(ws, 6, ".".join(run.host.split(".")[:2]), "", 180, log=lambda *a: None) or {}
+    link = hit.get("value") if hit.get("type") == "link" else None
+    if not link or "passwordreset" not in link.lower().replace("-", "").replace("_", ""):
+        run.reset_note = "no password-reset mail within 3 min"
+        return False
+    _URL.update(url=link)
+    _serve(URL_PORT, _json_handler(get=lambda p: dict(_URL)))
+    r = run.page(sd / "wd_reset.js", name="reset") or {}
+    _URL.update(url="")
+    ok = isinstance(r, dict) and r.get("state") == "password_reset_done"
+    run.note("password reset: " + (str(r.get("state")) if isinstance(r, dict) else "unclear"))
+    run.reset_note = str(r)[:160]
+    if ok:
+        run.page(goto=url, name="back to application")
+    return ok
+
+
 def _apply_url(u):
     u = (u or "").split("?")[0].rstrip("/")
     return u if u.endswith("/apply") or "/apply/" in u else u + "/apply"
@@ -352,7 +389,7 @@ def workday(ws, run, submit):
 
     # 1. sign in (create the account + verify by email when the tenant is new)
     state = {}
-    for attempt in range(3):
+    for attempt in range(4):
         state = run.page(sd / "wd_auth.js", goto=url if attempt == 0 else None) or {}
         st = state.get("state") if isinstance(state, dict) else None
         run.note(f"auth: {st}")
@@ -366,9 +403,14 @@ def workday(ws, run, submit):
                 run.note("account verified by email link")
                 run.page(goto=url, name="back to application")
                 continue
-            return run.done("needs_claude", detail="account created but no activation link found in Gmail within 3 min (account may already exist: use Forgot your password)", auth=st)
+            # no activation mail = the account already exists with another password (CLAUDE.md Workday step 4)
+            if not run.__dict__.get("reset_done") and _reset_password(ws, run, sd, url):
+                continue
+            return run.done("needs_claude", detail="account created but no activation link found in Gmail within 3 min, and the password reset did not complete: " + str(run.__dict__.get("reset_note", ""))[:200], auth=st)
         if st in ("captcha", "needs_user_checkbox"):
             return run.done("blocked", detail=state.get("detail") or st, auth=st)
+        if st == "account_exists_wrong_password" and not run.__dict__.get("reset_done") and _reset_password(ws, run, sd, url):
+            continue
         if st == "account_exists_wrong_password":
             return run.done("needs_claude", detail="account exists with a different password: run the password-reset flow (CLAUDE.md Workday step 4), then run apply again", auth=st)
         if attempt:
@@ -459,7 +501,7 @@ def greenhouse(ws, run, submit):
     run.host = url.split("/")[2]
     fill = (sd / "gh_fill.js").read_text(encoding="utf8").replace("__RESUME__", str(run.resume).replace("\\", "/")) \
         .replace("__COVER__", str(run.cover).replace("\\", "/") if run.cover else "")
-    r = run.page(text=fill, goto=url, name="fill", timeout=600) or {}
+    r = run.page(text=fill, goto=url, name="fill", timeout=600, keep=True) or {}
     if not isinstance(r, dict):
         return run.done("needs_claude", detail="unexpected fill output: " + str(r)[:300])
     run.note(f"filled {len(r.get('filled') or [])} fields")
@@ -479,6 +521,21 @@ def greenhouse(ws, run, submit):
         return run.done("ready", files=rv.get("files") if isinstance(rv, dict) else None, summary=table,
                         detail="final check passed; stopped before Submit (--no-submit)")
     sb = run.page(RUNNER / "gh_submit.js") or {}
+    if sb.get("needs_code") and not sb.get("submitted"):
+        # Greenhouse emails a security code after Submit (her decision 2026-11-23: read it from her mailbox and enter it)
+        from . import mail_verify
+        try:
+            code = mail_verify.find_greenhouse_code(ws, run.row.get("company") or "", since_minutes=30, wait_seconds=150)
+        except Exception as e:
+            code = None
+            run.note("security code mail lookup failed: " + type(e).__name__)
+        if code:
+            run.note("security code received by email and entered")
+            sb = run.page(text=(RUNNER / "gh_code.js").read_text(encoding="utf8").replace("__CODE__", _js(code)), name="code") or {}
+            try:
+                (run.work / "_code.js").unlink()
+            except Exception:
+                pass
     if sb.get("submitted"):
         _mark_applied(ws, run)
         return run.done("applied", fields_checked=len(table))
