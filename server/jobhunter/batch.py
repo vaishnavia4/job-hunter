@@ -21,12 +21,32 @@ def _pay(r):
     return max(n) if n else 0
 
 
-def run(ws, limit=10, model="sonnet", submit=None, log=print):
+def _claim(ws, job_id):
+    """True when this process may work on the job: nobody else has claimed it today (two batches side by side)."""
+    import os
+    f = ws.data / "batch_claims.json"
+    with ws.tracker_lock():
+        d = {}
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        d = {k: v for k, v in d.items() if v.get("date") == today()}
+        me = f"{os.getpid()}"
+        if job_id in d and d[job_id].get("by") != me:
+            return False
+        d[job_id] = {"date": today(), "by": me, "slot": autoapply.SLOT}
+        f.write_text(json.dumps(d, indent=1), encoding="utf-8")
+    return True
+
+
+def run(ws, limit=10, model="sonnet", submit=None, log=print, any_location=False):
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
     cap = int((ws.cfg("search", {}) or {}).get("max_per_company_per_day") or 2)
     rows = ws.load_tracker()
     cand = [r for r in rows if r["status"] in ("new", "tailored") and autoapply.detect_ats(r.get("apply_url") or r.get("url")) != "other"]
-    cand.sort(key=lambda r: (r["status"] != "tailored", _tier(r), -float(r.get("score") or 0), -_pay(r)))
+    # default: Colorado/remote first (her priority); any_location: best score and pay first, wherever the job is
+    cand.sort(key=lambda r: (r["status"] != "tailored", 0 if any_location else _tier(r), -float(r.get("score") or 0), -_pay(r)))
     out, per_co, t0, cost = [], {}, time.time(), 0.0
     for r in rows:
         if r["status"] == "applied" and r.get("date_applied") == today():
@@ -35,6 +55,14 @@ def run(ws, limit=10, model="sonnet", submit=None, log=print):
         if len(out) >= limit:
             break
         if per_co.get(r["company"], 0) >= cap:
+            continue
+        if not _claim(ws, r["job_id"]):
+            continue  # another batch is on it
+        cur = next((x for x in ws.load_tracker() if x["job_id"] == r["job_id"]), r)
+        if cur["status"] not in ("new", "tailored"):
+            continue  # changed since this batch started
+        applied_today = sum(1 for x in ws.load_tracker() if x["company"] == r["company"] and x["status"] == "applied" and x.get("date_applied") == today())
+        if applied_today >= cap:
             continue
         per_co[r["company"]] = per_co.get(r["company"], 0) + 1
         item = {"job_id": r["job_id"], "company": r["company"][:40], "title": r["title"][:60]}

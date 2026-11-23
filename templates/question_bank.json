@@ -10,6 +10,22 @@
  ],
  "questions": [
   {
+   "id": "candidate_ai_use_acknowledgement",
+   "category": "consent",
+   "prompt": "Employer asks you to acknowledge/agree NOT to use AI tools in their assessment or interview process (your own commitment): Yes or No?",
+   "patterns": [
+    "(agree|acknowledge|confirm|certify).{0,80}not (to )?(use|utili[sz]e|using).{0,40}(artificial intelligence|\\bai\\b)",
+    "not (to )?(use|utili[sz]e) (any )?(artificial intelligence|ai)\\b.{0,80}(assessment|interview|application|answer)",
+    "ai usage policy",
+    "(use|usage) of (generative )?ai .{0,60}(interview|assessment).{0,80}(acknowledge|agree)"
+   ],
+   "type": "yes_no",
+   "profile_key": null,
+   "options_hint": [],
+   "option_strategy": "",
+   "notes": "Never answered from another rule (2026-11-23: Expedia's text mentions 'disability accommodation' and was answered No by the disability rule). The user decides; until she records an answer this returns ASK_USER."
+  },
+  {
    "id": "comply_requirements",
    "category": "agreement",
    "prompt": "Will you be able to meet these requirements?",
@@ -585,7 +601,7 @@
    "profile_key": "standard_answers.how_did_you_hear",
    "options_hint": [
     "^(?!.*\\b(campus|university|college)\\b).*careers? (site|website|page)",
-    "^(?!.*\b(campus|university|college|job board|recruit)\b)[\\w&.' -]{2,30} (website|web site)$",
+    "^(?!.*\\b(campus|university|college|job board|recruit)\\b)[\\w&.' -]{2,30} (website|web site)$",
     "company (website|site)",
     "\\.com/careers",
     "^website$",
@@ -1438,7 +1454,8 @@
     "(uses?|using) (ai|artificial intelligence)[- ]?(based )?tools? .{0,80}(recruit|screen|evaluat|recommend|candida)",
     "(ai|artificial intelligence).{0,60}(recruitment|hiring) process.{0,120}consent",
     "consenting to the use of ai",
-    "(consent|agree) to [\\w&.' -]{1,40}? using (these |its |the )?(ai|artificial intelligence)"
+    "(consent|agree) to [\\w&.' -]{1,40}? using (these |its |the )?(ai|artificial intelligence)",
+    "hiredscore"
    ],
    "type": "choice",
    "profile_key": null

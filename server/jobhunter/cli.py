@@ -80,7 +80,7 @@ def main(argv=None):
     wr = sub.add_parser("report"); wr.add_argument("--days", type=int, default=7); wr.add_argument("--out", default="reports")
     ip = sub.add_parser("prep"); ip.add_argument("target", help="application folder or tracker job_id")
     tl = sub.add_parser("tailor"); tl.add_argument("target", help="tracker job_id or application folder"); tl.add_argument("--model", default="sonnet"); tl.add_argument("--level", choices=["auto", "low", "medium", "high"]); tl.add_argument("--force", action="store_true")
-    bt = sub.add_parser("batch"); bt.add_argument("--limit", type=int, default=10); bt.add_argument("--model", default="sonnet"); bt.add_argument("--no-submit", action="store_true")
+    bt = sub.add_parser("batch"); bt.add_argument("--limit", type=int, default=10); bt.add_argument("--model", default="sonnet"); bt.add_argument("--no-submit", action="store_true"); bt.add_argument("--any-location", action="store_true")
     apl = sub.add_parser("apply"); apl.add_argument("target", help="tracker job_id or application folder"); apl.add_argument("--no-submit", action="store_true", help="stop on the Review page after the final check")
     a = ap.parse_args(argv)
 
@@ -178,7 +178,7 @@ def main(argv=None):
         sys.exit(0 if res.get("status") in ("tailored", "skipped") else 2)
     elif a.cmd == "batch":
         from . import batch
-        res = batch.run(ws, limit=a.limit, model=a.model, submit=False if a.no_submit else None, log=lambda m: print(m, file=sys.stderr, flush=True))
+        res = batch.run(ws, limit=a.limit, model=a.model, submit=False if a.no_submit else None, any_location=a.any_location, log=lambda m: print(m, file=sys.stderr, flush=True))
         _p({k: v for k, v in res.items() if k != "items"})
     elif a.cmd == "apply":
         from . import autoapply

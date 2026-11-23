@@ -480,6 +480,19 @@ def lookup(ws, question_text, options=None):
                 alt["question"] = question_text
                 alt["note"] = (alt.get("note") or "") + " [matched on the question sentence; explanation text ignored]"
                 return alt
+    # A long EEO paragraph that names several topics ("race/ethnicity and gender") is decided by its option list
+    # (Comcast 2026-11-23: the race question was answered with the gender rule).
+    if res.get("status") != STATUS_OK and options and len(text) > 120:
+        low = " | ".join(str(o).lower() for o in options)
+        kind = ("What is your race/ethnicity?" if "asian" in low and ("white" in low or "black" in low) else
+                "What is your gender?" if "female" in low and "male" in low else
+                "What is your veteran status?" if "veteran" in low else None)
+        if kind:
+            alt = _lookup_one(ws, kind, options)
+            if alt.get("status") == STATUS_OK:
+                alt["question"] = question_text
+                alt["note"] = (alt.get("note") or "") + " [long label: topic taken from the option list]"
+                return alt
     return res
 
 
@@ -563,7 +576,8 @@ def _with_option(res, options, hints, strategy):
         res["status"] = AMBIG if how.startswith("ambiguous") else ASK
         res["confidence"] = 0.3
         res["note"] = (res.get("note") or "") + f" | could not map answer '{res['answer']}' to options ({how}) - ask the user, then record_answer() with options_hint."
-    elif DISQUALIFY_RX.search(norm(opt)):
+    elif DISQUALIFY_RX.search(norm(opt)) and not (res.get("question_id") == "employer_ai_screening_consent" and res.get("source") == "user_correction"):
+        # (declining the employer's AI screening is the user's own standing answer: that refusal is allowed)
         # an option that refuses the employer's terms or withdraws the application is never chosen automatically
         res["status"] = ASK
         res["confidence"] = 0.2
@@ -854,6 +868,12 @@ def final_review(ws, review):
         if ((str(review.get("job_id", "")).startswith("li:") or her_li) and re.match(r"linked ?in\b", norm(str(m.get("found", ""))))
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
             continue
+        # long EEO paragraph naming several topics: accept the value when it is her correct answer for one of them
+        # (same rule as lookup(); Comcast's race question matched the gender rule, 2026-11-23)
+        if len(str(m.get("label", ""))) > 120 and m.get("found"):
+            alts = [_lookup_one(ws, k, [str(m["found"])]) for k in ("What is your race/ethnicity?", "What is your gender?", "What is your veteran status?")]
+            if any(x.get("status") == STATUS_OK and x.get("option") for x in alts):
+                continue
         problems.append(f"Mismatch '{m['label']}': page has {m.get('found')!r}, expected {m.get('expected')!r}")
     problems += review.pop("_emp_problems", [])
     # required employment fields that are empty: only the end date of a current role may stay empty

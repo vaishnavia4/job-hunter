@@ -14,6 +14,7 @@ needed when the result is not `applied`/`ready`:
 The browser window stays open between runs, so a re-run continues from the step the form is on.
 """
 import json
+from datetime import datetime
 import os
 import re
 import shutil
@@ -28,8 +29,21 @@ from pathlib import Path
 from . import answers
 from .workspace import Workspace, load_json, today
 
-CDP_PORT = 9377
-ANSWER_PORT, CRED_PORT, URL_PORT = 47615, 47613, 47614
+# A second batch can run beside the first: JH_SLOT=2 gets its own Chrome (profile + debugging port) and its own
+# helper ports, so the two never share a login server or a browser tab.
+SLOT = max(1, int(os.environ.get("JH_SLOT") or 1))
+CDP_PORT = 9377 + (SLOT - 1)
+BASE_PORTS = {"answer": 47615, "cred": 47613, "url": 47614}
+ANSWER_PORT, CRED_PORT, URL_PORT = (BASE_PORTS[k] + 10 * (SLOT - 1) for k in ("answer", "cred", "url"))
+
+
+def _slot_ports(text):
+    """Page scripts name the helper ports literally; point them at this slot's servers."""
+    if SLOT == 1:
+        return text
+    for k, port in (("answer", ANSWER_PORT), ("cred", CRED_PORT), ("url", URL_PORT)):
+        text = text.replace(str(BASE_PORTS[k]), str(port))
+    return text
 RUNNER = Path(__file__).resolve().parent / "runner"
 
 
@@ -79,8 +93,48 @@ def _json_handler(get=None, post=None):
     return H
 
 
+_CTX = {}
+PRIOR_APP_RX = re.compile("have you (ever |previously |already )?(applied|submitted an application)|previously applied (to|for|with)", re.I)
+
+
+def _prior_application(ws, label):
+    """'Have you ever applied to this company?' is a fact the tracker knows. -> (yes: bool, count) or None."""
+    if not PRIOR_APP_RX.search(label or "") or not _CTX.get("company"):
+        return None
+    n = sum(1 for r in ws.load_tracker() if r["company"] == _CTX["company"] and r["job_id"] != _CTX.get("job_id")
+            and (r["status"] in ("applied", "rejected", "assessment", "interview", "offer") or r.get("date_applied")))
+    return n > 0, n
+
+
+def _prior_detail(ws, label):
+    """Follow-up to the prior-application question ("When and where?"): month, year and role of the last one."""
+    if not re.match("(if (yes|so),? )?(please )?(tell us |specify |indicate )?when and where", (label or "").strip(), re.I) or not _CTX.get("company"):
+        return None
+    prev = sorted((r for r in ws.load_tracker() if r["company"] == _CTX["company"] and r["job_id"] != _CTX.get("job_id") and r.get("date_applied")),
+                  key=lambda r: r["date_applied"])
+    if not prev:
+        return None
+    r = prev[-1]
+    try:
+        when = datetime.strptime(r["date_applied"][:10], "%Y-%m-%d").strftime("%B %Y")
+    except ValueError:
+        when = r["date_applied"]
+    return f"{when}, online application for {r['title'].strip()}"
+
+
 def _answer_post(ws):
     def post(path, req):
+        pd = _prior_detail(ws, req.get("q", "")) if path != "/save_review" else None
+        if pd:
+            return {"question": req.get("q"), "question_id": "prior_application_detail", "status": "ok", "answer": pd, "option": None,
+                    "confidence": 0.95, "source": "tracker", "note": "from the tracker"}
+        pa = _prior_application(ws, req.get("q", "")) if path != "/save_review" else None
+        if pa:
+            want = "yes" if pa[0] else "no"
+            opt = next((o for o in (req.get("options") or []) if str(o).strip().lower().startswith(want)), None)
+            if opt or not req.get("options"):
+                return {"question": req.get("q"), "question_id": "prior_application", "status": "ok", "answer": want.capitalize(),
+                        "option": opt, "confidence": 0.95, "source": "tracker", "note": f"{pa[1]} earlier application(s) to this company in the tracker"}
         if path == "/save_review":
             apps = (ws.root / "applications").resolve()
             folder = (apps / str(req.get("folder", ""))).resolve()
@@ -129,7 +183,7 @@ def ensure_browser(ws):
     exe = _chrome_exe()
     if not exe:
         return False
-    prof = ws.root / ".browser-apply"
+    prof = ws.root / (".browser-apply" if SLOT == 1 else f".browser-apply-{SLOT}")
     prof.mkdir(exist_ok=True)
     flags = 0
     if os.name == "nt":
@@ -161,9 +215,11 @@ class Run:
 
     def page(self, script=None, goto=None, screenshot=None, timeout=600, text=None, name="step", keep=False, close=False):
         """Run one page function (file path, or `text` written to the work dir). Returns the script's result."""
+        if text is None and script and SLOT > 1:
+            text, name = Path(script).read_text(encoding="utf-8"), Path(script).stem  # rewritten for this slot's ports below
         if text is not None:
             script = self.work / f"_{name}.js"
-            script.write_text(text, encoding="utf-8")
+            script.write_text(_slot_ports(text), encoding="utf-8")
         cmd = ["node", str(RUNNER / "run.mjs"), "--cdp", f"http://127.0.0.1:{CDP_PORT}"]
         if self.host and not goto:
             cmd += ["--host", self.host]
@@ -315,6 +371,14 @@ def _final_check(ws, run):
         return None, ["review.json was not written"]
     if _repair_review(review):
         (run.folder / "review.json").write_text(json.dumps(review, indent=1, ensure_ascii=False), encoding="utf8")
+    for f in review.get("fields") or []:  # tracker-backed facts are verified here, not in the answer bank
+        pd = _prior_detail(ws, f.get("label"))
+        if pd and str(f.get("value") or "").strip() == pd:
+            review.setdefault("verified_overrides", {})[f["label"]] = {"value": f["value"], "source": "tracker: last application to this company"}
+        pa = _prior_application(ws, f.get("label"))
+        v = str(f.get("value") or "").strip().lower()
+        if pa and v.startswith("yes" if pa[0] else "no"):
+            review.setdefault("verified_overrides", {})[f["label"]] = {"value": f["value"], "source": f"tracker: {pa[1]} earlier application(s) to this company"}
     res = answers.final_review(ws, review)
     probs = list(res.get("problems") or [])
     if res.get("hand_to_user"):
@@ -568,6 +632,7 @@ def apply(ws, target, submit=None):
     if not row.get("folder") or not (folder / "tailored.json").exists():
         return {"status": "error", **base, "detail": "no tailored application folder - tailor first"}
     run = Run(ws, row, folder)
+    _CTX.update(company=row["company"], job_id=row["job_id"])
     run.resume = next(iter(sorted(folder.glob("Resume_*.pdf"))), None)
     run.cover = next(iter(sorted(folder.glob("CoverLetter_*.pdf"))), None)
     if not run.resume:

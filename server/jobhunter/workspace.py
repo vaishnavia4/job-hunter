@@ -93,7 +93,45 @@ class Workspace:
             for r in rows:
                 w.writerow({k: r.get(k, "") for k in TRACKER_FIELDS})
 
+    def tracker_lock(self, wait=30):
+        """Cross-process lock for read-modify-write of the tracker (two batches can run side by side)."""
+        import contextlib
+        import os
+        import time as _t
+        lock = self.data / ".tracker.lock"
+
+        @contextlib.contextmanager
+        def held():
+            t0, fd = _t.time(), None
+            while fd is None:
+                try:
+                    fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                except FileExistsError:
+                    try:
+                        if _t.time() - lock.stat().st_mtime > 60:  # left behind by a crashed run
+                            lock.unlink()
+                            continue
+                    except OSError:
+                        pass
+                    if _t.time() - t0 > wait:
+                        break  # do not hang a batch forever; proceed unlocked
+                    _t.sleep(0.2)
+            try:
+                yield
+            finally:
+                if fd is not None:
+                    os.close(fd)
+                    try:
+                        lock.unlink()
+                    except OSError:
+                        pass
+        return held()
+
     def set_fields(self, job_id, **fields):
+        with self.tracker_lock():
+            return self._set_fields(job_id, **fields)
+
+    def _set_fields(self, job_id, **fields):
         rows = self.load_tracker()
         hit = [r for r in rows if r["job_id"] == job_id]
         if not hit:
