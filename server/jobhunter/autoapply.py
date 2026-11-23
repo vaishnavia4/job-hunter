@@ -386,6 +386,25 @@ def _final_check(ws, run):
     return res, probs
 
 
+def _already_confirmed(ws, run):
+    """The user may have submitted this form by hand a moment ago (Upgrade 2026-11-23 was sent twice): if a
+    confirmation email for the company just arrived, record it and do not submit again."""
+    try:
+        from . import mail_verify
+        # one confirmation is expected for every application to this company already recorded today (max 2 a day);
+        # only an extra one means this very form was just submitted by hand
+        known = sum(1 for r in ws.load_tracker() if r["company"] == run.row["company"] and r["job_id"] != run.row["job_id"]
+                    and r["status"] == "applied" and r.get("date_applied") == today())
+        if mail_verify.recent_confirmation(ws, run.row.get("company") or "") <= known:
+            return None
+    except Exception:
+        return None
+    note = (run.row.get("notes") or "").strip()
+    ws.set_fields(run.row["job_id"], status="applied", submitted_by="vaishnavi",
+                  notes=(note + " | " if note else "") + "confirmation email already received " + today() + " - not submitted again by the runner")
+    return run.done("applied", detail="a confirmation email for this company arrived in the last hours: already submitted, not sent again")
+
+
 def _mark_applied(ws, run, extra=""):
     shots = run.folder / "screenshots"
     shots.mkdir(exist_ok=True)
@@ -530,6 +549,9 @@ def workday(ws, run, submit):
                         detail="final check passed; stopped before Submit (--no-submit)")
 
     # 5. submit + confirm
+    done = _already_confirmed(ws, run)
+    if done:
+        return done
     sb = run.page(RUNNER / "wd_submit.js") or {}
     if sb.get("submitted"):
         _mark_applied(ws, run)
@@ -566,6 +588,13 @@ def greenhouse(ws, run, submit):
     fill = (sd / "gh_fill.js").read_text(encoding="utf8").replace("__RESUME__", str(run.resume).replace("\\", "/")) \
         .replace("__COVER__", str(run.cover).replace("\\", "/") if run.cover else "")
     r = run.page(text=fill, goto=url, name="fill", timeout=600, keep=True) or {}
+    # some boards redirect the job link to the company's own careers page, where the form sits in a frame
+    # (PathAI, SambaNova, Oscar Health): open Greenhouse's direct form for the same job instead
+    m = re.match("gh:([^:]+):([0-9]+)$", run.row.get("job_id") or "") or re.search("greenhouse[.]io/([^/?]+)/jobs/([0-9]+)", url)
+    if isinstance(r, dict) and not r.get("filled") and m and "embed/job_app" not in url:
+        url = f"https://job-boards.greenhouse.io/embed/job_app?for={m.group(1)}&token={m.group(2)}"
+        run.note("job link redirects to the company site: using the direct Greenhouse form")
+        r = run.page(text=fill, goto=url, name="fill", timeout=600, keep=True) or {}
     if not isinstance(r, dict):
         return run.done("needs_claude", detail="unexpected fill output: " + str(r)[:300])
     run.note(f"filled {len(r.get('filled') or [])} fields")
@@ -584,6 +613,9 @@ def greenhouse(ws, run, submit):
         run.page(screenshot=run.folder / "review_before_submit.png", name="shot")
         return run.done("ready", files=rv.get("files") if isinstance(rv, dict) else None, summary=table,
                         detail="final check passed; stopped before Submit (--no-submit)")
+    done = _already_confirmed(ws, run)
+    if done:
+        return done
     sb = run.page(RUNNER / "gh_submit.js") or {}
     if sb.get("needs_code") and not sb.get("submitted"):
         # Greenhouse emails a security code after Submit (her decision 2026-11-23: read it from her mailbox and enter it)

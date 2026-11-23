@@ -665,9 +665,10 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
                             "score": j["score"], "keyword_coverage": j["keyword_coverage"], "salary": j["salary"],
                             "flags": j["flags"], "status": "new"})
         added = tracker[n_before:]
-        tracker = ws.load_tracker()  # re-read: never overwrite rows another command changed while this ran
-        have = {r["job_id"] for r in tracker}
-        ws.save_tracker(tracker + [r for r in added if r["job_id"] not in have])
+        with ws.tracker_lock():  # a batch may be applying at the same moment
+            tracker = ws.load_tracker()  # re-read: never overwrite rows another command changed while this ran
+            have = {r["job_id"] for r in tracker}
+            ws.save_tracker(tracker + [r for r in added if r["job_id"] not in have])
         ws.export_xlsx()
     try:
         from . import skills_gap

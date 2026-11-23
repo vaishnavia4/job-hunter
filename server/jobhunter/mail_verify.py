@@ -154,3 +154,35 @@ def find_greenhouse_code(ws: Workspace, company="", since_minutes=10, wait_secon
         if best or time.time() >= deadline:
             return best[1] if best else None
         time.sleep(poll)
+
+
+def recent_confirmation(ws: Workspace, company, minutes=240):
+    """Number of application-confirmation emails for this company arrived in the last `minutes`
+    ("Thank you for applying to X" and similar). Used right before Submit so a form the user has just
+    submitted by hand is never sent a second time."""
+    key = re.sub("[^a-z0-9]+", " ", (company or "").lower()).split()[:1]
+    if not key:
+        return 0
+    c = _creds(ws)
+    after = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    hits = 0
+    M = imaplib.IMAP4_SSL("imap.gmail.com")
+    M.login(c["email"], c["app_password"].replace(" ", ""))
+    try:
+        if M.select('"[Gmail]/All Mail"', readonly=True)[0] != "OK":
+            return 0
+        typ, d = M.search(None, f'(SINCE {(after - timedelta(days=1)).strftime("%d-%b-%Y")} SUBJECT "{key[0]}")')
+        for n in (d[0].split() if d and d[0] else [])[-25:]:
+            h = email.message_from_bytes(M.fetch(n, "(BODY.PEEK[HEADER.FIELDS (DATE SUBJECT)])")[1][0][1])
+            subj = str(make_header(decode_header(h.get("Subject", "")))).lower()
+            try:
+                when = parsedate_to_datetime(h.get("Date"))
+            except Exception:
+                continue
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            if when >= after and re.search("thank you for (applying|your application|your interest)|application (received|submitted)|we('ve| have) received your application", subj):
+                hits += 1
+    finally:
+        M.logout()
+    return hits
