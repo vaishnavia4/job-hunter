@@ -1210,7 +1210,7 @@
    "patterns": [
     "field of study",
     "\\bmajor\\b",
-    "discipline"
+    "^(academic |degree |educational )?discipline\\b(?!.*\\b(describe|experience|skills)\\b)"
    ],
    "type": "choice",
    "profile_key": "education.field",
@@ -1228,10 +1228,7 @@
    "category": "education",
    "prompt": "School / university. Fill even when optional?",
    "patterns": [
-    "school",
-    "universit",
-    "college",
-    "institution"
+    "^(?!.*\\b(individual|relative|official|relationship|employee of|employment|employer)\\b).*(school|universit|college|institution)"
    ],
    "type": "text",
    "profile_key": "education.school",

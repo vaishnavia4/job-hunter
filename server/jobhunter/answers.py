@@ -1,7 +1,7 @@
 """Answer bank: deterministic answers for application questions, learned from the user.
 
 Resolution order for a question label:
-  1. LEARNED answers in <workspace>/profile/answer_bank.json (source user_correction / user_filled) whose patterns match
+  1. LEARNED answers in <workspace>/profile/answer_bank.json (source user_correction / user_filled / profile_fact = a fact derivable from her profile/master resume, recorded with a note) whose patterns match
   2. the canonical question bank (templates/question_bank.json, first matching entry wins)
        -> the workspace answer_bank entry with that id (source setup), else profile.json[profile_key]
   3. unknown -> ASK_USER  (then record_answer so it's never asked again)
@@ -73,14 +73,14 @@ def pnorm(s):
     return re.sub(r"[^a-z0-9]+", " ", norm(s)).strip()
 
 
-CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?(?:careers?|jobs?) (?:website|web site|site|page)$")
+CAREERS_RX = re.compile(r"^(?:the )?(?:[a-z0-9&.'-]+ )*?(?:careers?|jobs?) (?:website|web site|site|page|webpage|web page)$")  # HPE 2026-11-16: "HPE Careers webpage"
 
 
 def _canon(s):
     """Canonical form used to compare a stored answer with what is on the page."""
     n = norm(s)
     # "Campus Career Site" / "University career site" are student-recruiting channels, not the company's own site
-    if CAREERS_RX.match(n) and not re.search(r"\b(campus|university|college|job board)\b", n):
+    if CAREERS_RX.match(n) and not re.search(r"\b(campus|university|college|job board|internal|student)\b", n):
         return "company careers website"
     return n
 
@@ -140,7 +140,7 @@ def equivalent(found, expected):
         return True
     # "<company>.com/careers" / "<Company> Careers Page" = "Company careers website"
     if re.search(r"careers? (website|site|page)", ne) and re.search(r"\.com/careers|careers? (website|site|page)|^(corporate|company) (web ?site|site|careers?)$|^[a-z0-9&.\- ]{2,30} web ?site$|^careers? at [a-z0-9&.\- ]{2,40}$", nv) \
-            and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search|campus|university|college)\b", nv):
+            and not re.search(r"\b(job|indeed|linkedin|glassdoor|board|social|search|campus|university|college|internal|student)\b", nv):
         return True
     # affirmation wordings: "I Agree" = "I acknowledge" = "I accept" (never matches a No/decline)
     affirm = re.compile(r"^(yes,? )?i (agree|acknowledge|accept|consent)\b|^(agree|acknowledged?|accept(ed)?)$")
@@ -463,7 +463,23 @@ def _skill_years(ws, text, prof):
 
 
 def lookup(ws, question_text, options=None):
-    """Best answer for a question label. Returns a dict with status/answer/option/confidence/source."""
+    """Best answer for a question label. Returns a dict with status/answer/option/confidence/source.
+    A long label (question + explanation paragraph) that does not resolve is retried on its question sentence alone:
+    words in the explanation can match an unrelated rule (Salesforce export-control question, 2026-11-16)."""
+    res = _lookup_one(ws, question_text, options)
+    text = str(question_text or "")
+    if res.get("status") == ASK and len(text) > 160 and "?" in text:
+        first = text[:text.index("?") + 1].strip()
+        if 15 <= len(first) < len(text) - 20:
+            alt = _lookup_one(ws, first, options)
+            if alt.get("status") == STATUS_OK:
+                alt["question"] = question_text
+                alt["note"] = (alt.get("note") or "") + " [matched on the question sentence; explanation text ignored]"
+                return alt
+    return res
+
+
+def _lookup_one(ws, question_text, options=None):
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
     t = norm(question_text)
     bank_ws = load_answers(ws)
@@ -475,7 +491,7 @@ def lookup(ws, question_text, options=None):
         return res
 
     # 1. learned answers (user corrections / user-filled) win
-    learned = [a for a in bank_ws.get("answers", []) if a.get("source") in ("user_correction", "user_filled") and a.get("patterns")]
+    learned = [a for a in bank_ws.get("answers", []) if a.get("source") in ("user_correction", "user_filled", "profile_fact") and a.get("patterns")]
     for a in reversed(learned):  # newest first
         if _match_any(a["patterns"], t):
             q = match_question(question_text) or {}
@@ -734,7 +750,7 @@ def _page_flags(prof, text):
     if want:
         for line in text.splitlines():
             if re.search(r"salary|compensation|pay expectation", line, re.I) and len(line) < 220 and not re.search(r"veteran|disabilit|equal employment", line, re.I):
-                got = _num(line)
+                got = [g for g in (_num(line) or []) if g not in (2080, 40)]  # hours/year or hours/week in "divide by 2080" instructions (DaVita 2026-11-12)
                 # employer-stated range the candidate is asked to acknowledge ("...range is $155,000 - $185,000. Do you
                 # acknowledge/agree this aligns...?"): fine when the whole range is at/above her floor (Cohere 2026-11-09)
                 if got and re.search(r"acknowledge|agree|align|comfortable|okay with|accept", line, re.I) and min(got) >= want[0]:
@@ -857,7 +873,7 @@ def final_review(ws, review):
     # files: resume carries the company slug; cover-letter slot holds a CoverLetter file
     cslug = re.sub(r"[^a-z0-9]", "", norm(company))[:30]
     flat = lambda n: re.sub(r"[^a-z0-9]", "", n.lower())
-    is_cover = lambda n: bool(re.search(r"cover", n.replace("_", " "), re.I))
+    is_cover = lambda n: bool(re.search(r"cover|coverletter", n.replace("_", " "), re.I))  # word only: "Discovery" contains "cover" (WBD 2026-11-10)
     # file slots: explicit file fields, or SHORT labels naming a resume/CV/cover letter. A long question that merely
     # mentions "resume" (FIS: "...AI tools to screen my resume, application...") is not an upload slot.
     slots = [(f, str(f.get("value") or "")) for f in fields

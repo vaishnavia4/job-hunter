@@ -19,6 +19,9 @@
   answer "<label>" [--options a|b|c]       look up a form answer
   record "<label>" "<answer>" [--source S] [--hints r1|r2] [--note N]
   verify <fields.json>         verify read-back form fields
+  tailor <job_id|folder> [--model sonnet] [--level L]   one-call screen + tailor + build (prints measured cost)
+  batch [--limit 10] [--model sonnet] [--no-submit]   tailor + apply the best new Workday/Greenhouse jobs, one summary
+  apply <job_id|folder> [--no-submit]   token-free: sign in, fill, final-check, submit, track (one JSON result)
   final-check <review.json>    last pre-submit re-verification (fields, files, page text red flags)
   selfcheck                    compile every package module (syntax guard)
   responses [--days N] [--dry-run]  read employer replies in Gmail, classify, update tracker
@@ -74,6 +77,9 @@ def main(argv=None):
     rs = sub.add_parser("responses"); rs.add_argument("--days", type=int, default=14); rs.add_argument("--dry-run", action="store_true")
     wr = sub.add_parser("report"); wr.add_argument("--days", type=int, default=7); wr.add_argument("--out", default="reports")
     ip = sub.add_parser("prep"); ip.add_argument("target", help="application folder or tracker job_id")
+    tl = sub.add_parser("tailor"); tl.add_argument("target", help="tracker job_id or application folder"); tl.add_argument("--model", default="sonnet"); tl.add_argument("--level", choices=["auto", "low", "medium", "high"]); tl.add_argument("--force", action="store_true")
+    bt = sub.add_parser("batch"); bt.add_argument("--limit", type=int, default=10); bt.add_argument("--model", default="sonnet"); bt.add_argument("--no-submit", action="store_true")
+    apl = sub.add_parser("apply"); apl.add_argument("target", help="tracker job_id or application folder"); apl.add_argument("--no-submit", action="store_true", help="stop on the Review page after the final check")
     a = ap.parse_args(argv)
 
     if a.cmd == "init":
@@ -163,6 +169,20 @@ def main(argv=None):
             kind = "reset" if "passwordreset" in r["value"] else ("activation" if r.get("type") == "link" else r.get("type"))
             r = {**{k: v for k, v in r.items() if k != "value"}, "saved_to": a.save, "kind": kind}
         _p(r)
+    elif a.cmd == "tailor":
+        from . import tailor
+        res = tailor.tailor(ws, a.target, model=a.model, level=a.level, force=a.force)
+        _p(res)
+        sys.exit(0 if res.get("status") in ("tailored", "skipped") else 2)
+    elif a.cmd == "batch":
+        from . import batch
+        res = batch.run(ws, limit=a.limit, model=a.model, submit=False if a.no_submit else None, log=lambda m: print(m, file=sys.stderr, flush=True))
+        _p({k: v for k, v in res.items() if k != "items"})
+    elif a.cmd == "apply":
+        from . import autoapply
+        res = autoapply.apply(ws, a.target, submit=False if a.no_submit else None)
+        _p(res)
+        sys.exit(0 if res.get("status") in ("applied", "ready") else 2)
     elif a.cmd == "export":
         _p({"xlsx": ws.export_xlsx()})
     elif a.cmd == "final-check":

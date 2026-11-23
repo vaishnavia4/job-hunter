@@ -414,10 +414,14 @@ def prescreen(ws: Workspace, dry_run=False, statuses=("new",), forms=True):
         if why:
             hits.append({"job_id": r["job_id"], "company": r["company"], "title": r["title"], "reason": why})
             by_reason[why.split(" [")[0]] = by_reason.get(why.split(" [")[0], 0) + 1
-            if not dry_run:
-                r["status"] = "skipped"
-                r["notes"] = "; ".join(x for x in (r.get("notes", ""), f"prescreen: {why}") if x)[:400]
     if hits and not dry_run:
+        # re-read before saving: the form checks above take minutes and another command (apply, set) may have
+        # written the tracker meanwhile (2026-11-23: a running search reverted an "applied" row)
+        rows, why_by = ws.load_tracker(), {h["job_id"]: h["reason"] for h in hits}
+        for r in rows:
+            if r["job_id"] in why_by and r["status"] in statuses:
+                r["status"] = "skipped"
+                r["notes"] = "; ".join(x for x in (r.get("notes", ""), f"prescreen: {why_by[r['job_id']]}") if x)[:400]
         ws.save_tracker(rows)
         ws.export_xlsx()
     return {"dry_run": dry_run, "skipped": len(hits), "by_reason": by_reason, "jobs": hits}
@@ -474,6 +478,7 @@ class Scorer:
         self.vocab = load_vocab(ws)
         prof = ws.profile()
         self.floor = (prof.get("job_preferences") or {}).get("salary_floor") or 0
+        self.salary_tiers = c.get("salary_bonus_tiers") or [[140000, 3], [170000, 6], [200000, 9], [240000, 12]]
         self.excluded = [e.lower() for e in (prof.get("job_preferences") or {}).get("excluded_companies", [])]
         wa = prof.get("work_authorization") or {}
         self.needs_sponsor = str(wa.get("requires_sponsorship_now_or_future", "")).lower().startswith("y")
@@ -554,7 +559,11 @@ class Scorer:
         if age is not None and age <= 3:
             score += 5
         if hi is not None and self.floor and hi >= self.floor:
-            score += 3
+            # higher posted pay ranks higher (her priority 2026-11-23): best matching tier of [max salary, points]
+            pts = [p for m, p in self.salary_tiers if hi >= m]
+            score += max(pts) if pts else 3
+            if pts and max(pts) >= 6:
+                reasons.append("high salary")
         i = desc.lower().find("sponsor")
         if i >= 0 and not re.search(r"no |not |unable|cannot", desc[max(0, i - 60):i], re.I):
             reasons.append("mentions sponsorship (check)")
@@ -609,6 +618,7 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
         list(ex.map(lambda j: DETAIL_FETCHERS[j["ats"]](j), need))
 
     tracker = ws.load_tracker()
+    n_before = len(tracker)
     known_ids = {r["job_id"] for r in tracker}
     known_keys = {(r["company"].lower(), r["title"].lower()) for r in tracker}
     scored, rejects = [], {}
@@ -654,7 +664,10 @@ def search(ws: Workspace, limit=None, analyze_only=False, dry_run=False, log=pri
                             "location": j["location"], "ats": j["ats"], "url": j["url"], "apply_url": j["apply_url"],
                             "score": j["score"], "keyword_coverage": j["keyword_coverage"], "salary": j["salary"],
                             "flags": j["flags"], "status": "new"})
-        ws.save_tracker(tracker)
+        added = tracker[n_before:]
+        tracker = ws.load_tracker()  # re-read: never overwrite rows another command changed while this ran
+        have = {r["job_id"] for r in tracker}
+        ws.save_tracker(tracker + [r for r in added if r["job_id"] not in have])
         ws.export_xlsx()
     try:
         from . import skills_gap

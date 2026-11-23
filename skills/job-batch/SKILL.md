@@ -10,6 +10,15 @@ Max jobs = $ARGUMENTS or `profile.job_preferences.applications_per_day`. Narrate
 
 Pipeline: **find -> screen from `jobs/jd` -> folder only for "apply" -> tailor -> apply -> track.** Skipped jobs never get a folder.
 
+## Cheap path (use it first)
+A batch driven click by click in one long chat costs dollars per application; these two commands cost cents. Run them from the plugin's `server/` folder with `--workspace <workspace>`.
+- **`python -m jobhunter tailor <job_id> [--model sonnet] [--level L]`**: one model call screens the job, writes `tailored.json` and `cover_letter.md`, builds, runs the truth check and prints the measured cost. Result `tailored`, `skipped` (reason saved to the tracker) or `needs_review` (fix by hand with the `tailor-resume` skill). It replaces steps 2-4 below for each job; run `prescreen` first so obvious skips cost nothing.
+- **`python -m jobhunter apply <job_id> [--no-submit]`**: Workday and Greenhouse with no model: sign in, fill, read back, final check, submit (only in the user's auto mode; otherwise it stops at `ready`), screenshot, tracker. It prints one JSON result and resumes from the current step when run again.
+  - `needs_answers`: answer from the answer bank rules; a truly new question goes to the user. Record it, run `apply` again.
+  - `final_check_failed` / `blocked` / `needs_claude`: read `detail`, then use the `apply` skill for that one step only.
+- Other sites use the `apply` skill as before.
+- Keep the chat small: no screenshots in context, no full readbacks, one tracker update per job, and a fresh session per batch.
+
 1. **Find**: `search_jobs` (limit = max jobs). Options: `exclude_ats` (e.g. `["workday"]` for a quick run), `preferred_location=true` (only the profile's preferred locations or remote). Also run `read_job_alerts` if the user set up Gmail alerts, and `add_job` for any links they pasted (see "Paste a job link" below). Report fetched / passed / shortlisted and the top titles. If results look off (wrong functions, wrong countries), fix `config/search.json` regexes and re-run with `dry_run=true` first.
 2. **Screen first, no folders yet**: for each `new` job read `jobs/jd/<id>.json` (JD text, score, flags) with `profile.json` and `master_resume.json`. Decide `apply` (honest fit % and gaps) or `skip` (reason). Record every skip in the tracker only: `update_status(job_id, {"status": "skipped", "notes": "<reason>"})`. **Do not create an application folder for a skip.** Skip rules are in the `tailor-resume` skill.
 3. **Prepare only the "apply" jobs**: `prepare_application(job_id)` for each (one writer on the tracker), then write `decision.json` (`{"decision":"apply","fit":..,"gaps":[..]}`) in the folder and `sync_decisions`.

@@ -6,6 +6,8 @@ argument-hint: [application-folder-or-job-id]
 
 # Apply to a job
 
+**First try `python -m jobhunter apply <job_id>`** (Workday and Greenhouse; no model, one JSON result; see the `job-batch` skill). Use the browser playbooks below only for other sites or for the single step that command reports as `needs_claude` / `final_check_failed`.
+
 Needs the Playwright MCP browser tools. Read `profile/profile.json` (`submit_policy`), the folder's `notes.md`, `decision.json`, the built resume/cover-letter PDFs, and **`lessons.md` in this skill folder** (mistakes already made once: don't repeat them).
 
 ## The answer loop (mandatory: this is what makes it rigid)
