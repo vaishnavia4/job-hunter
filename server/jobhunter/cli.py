@@ -25,7 +25,7 @@
   final-check <review.json>    last pre-submit re-verification (fields, files, page text red flags)
   selfcheck                    compile every package module (syntax guard)
   responses [--days N] [--dry-run]  read employer replies in Gmail, classify, update tracker
-  daily [--days 21] [--no-mail] [--open]  morning check: read replies, analyse rejections, write reports/daily_<date>.md + tracker.html
+  daily [--days 21] [--no-mail] [--open]  morning check: read replies, analyse rejections, rewrite the one tracker page (tracker.html)
   report [--days 7] [--out reports]  weekly funnel/response report (+ Weekly sheet in tracker.xlsx)
   prep <folder|job_id>         write interview_prep.md for an application
 """
