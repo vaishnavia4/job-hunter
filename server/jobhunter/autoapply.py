@@ -124,8 +124,28 @@ def _prior_detail(ws, label):
     return f"{when}, online application for {r['title'].strip()}"
 
 
+def _company_answer(ws, label):
+    """Answers that are right for ONE employer only (answer_bank.json -> "company_answers": {"humana": {label: answer}}),
+    e.g. a bare "If yes, please explain." that follows the sponsorship question on that employer's form."""
+    co = (_CTX.get("company") or "").lower()
+    if not co or not label:
+        return None
+    table = (load_json(ws.profile_dir / "answer_bank.json", {}) or {}).get("company_answers") or {}
+    key = re.sub(" +", " ", str(label)).strip().rstrip("*").strip().lower()
+    for name, answers_ in table.items():
+        if co.startswith(name.lower()) or name.lower() in co:
+            hit = next((v for k, v in answers_.items() if k.strip().lower() == key), None)
+            if hit:
+                return hit
+    return None
+
+
 def _answer_post(ws):
     def post(path, req):
+        ca = _company_answer(ws, req.get("q", "")) if path != "/save_review" else None
+        if ca:
+            return {"question": req.get("q"), "question_id": "company_answer", "status": "ok", "answer": ca, "option": None,
+                    "confidence": 0.95, "source": "user_correction", "note": "company-specific answer"}
         pd = _prior_detail(ws, req.get("q", "")) if path != "/save_review" else None
         if pd:
             return {"question": req.get("q"), "question_id": "prior_application_detail", "status": "ok", "answer": pd, "option": None,
@@ -311,7 +331,29 @@ WD_COMBO = r"""async (page) => {
   const step = async () => (await page.locator('[data-automation-id="progressBarActiveStep"]').innerText().catch(() => '')).replace(/\s+/g, ' ');
   const next = async () => { await page.keyboard.press('Escape').catch(() => {}); await page.evaluate(() => document.querySelector('[data-automation-id="pageFooterNextButton"]').click()); await page.waitForTimeout(6500); const e = await page.locator('[data-automation-id="errorMessage"]:visible').allInnerTexts(); if (e.length) out.push('ERRORS after next: ' + e.join(' | ')); return !e.length; };
   if (/My Information/.test(await step())) { const r = await MYINFO(page); out.push('MYINFO: ' + r.join('; ')); if (r.some(x => /^(NOT SET|SOURCE NOT SET|EMPTY REQUIRED: (?!none))/.test(x))) return out.join('\n'); if (!(await next())) return out.join('\n'); }
-  if (/My Experience/.test(await step())) { const r = await EXP(page); out.push('EXP: ' + r.join('; ')); if (r.some(x => /NOT (SET|FOUND)|FAILED/.test(x))) return out.join('\n'); if (!(await next())) return out.join('\n'); }
+  if (/My Experience/.test(await step())) { const r = await EXP(page); out.push('EXP: ' + r.join('; ')); if (r.some(x => /NOT (SET|FOUND)|FAILED/.test(x))) return out.join('\n');
+    if (!(await next()) || /My Experience/.test(await step())) {
+      // a saved draft already holds the website links: Workday then rejects the same links typed again
+      // ("You can't add duplicate website URLs", TD and Nasdaq). Remove the typed rows and continue; the saved ones stay.
+      const dup = (await page.locator('[data-automation-id="errorMessage"]:visible, [role=alert]:visible, [data-automation-id*="error" i]:visible').allInnerTexts()).some(t => /duplicate website/i.test(t));
+      if (!dup) return out.join('\n');
+      for (let k = 0; k < 6; k++) { const d = page.locator('[role=group][aria-labelledby^="Websites-"] button:has-text("Delete")').first(); if (!(await d.count())) break; await d.evaluate(e => e.click()); await page.waitForTimeout(1200); }
+      out.push('removed website rows already saved in the draft');
+      if (!(await next())) return out.join('\n');
+    } }
+  // required tick-box groups (CheckboxGroup fieldsets), which wd_auto does not handle: answer from the bank (TD, Humana)
+  for (const fs of await page.locator('fieldset[data-automation-id$="-CheckboxGroup"]').all()) {
+    if (await fs.locator('input:checked').count()) continue;
+    const legend = (await fs.locator('xpath=ancestor::fieldset[1]/legend').innerText().catch(() => '')).replace(/\s+/g, ' ').replace(/\*\s*$/, '').trim();
+    const labs = await fs.locator('label').all(); const ot = [];
+    for (const x of labs) ot.push((await x.innerText()).replace(/\s+/g, ' ').trim());
+    if (!legend || !ot.length) continue;
+    let a = {}; try { a = await (await page.request.post('http://127.0.0.1:47615/lookup', { data: { q: legend, options: ot } })).json(); } catch (e) {}
+    let k = a.status === 'ok' && a.option ? ot.indexOf(a.option) : -1;
+    if (k < 0 && a.status === 'ok' && /^no$/i.test(String(a.answer || ''))) k = ot.findIndex(t => /^(no|none of the above)$/i.test(t));
+    if (k >= 0) { await labs[k].click(); await page.waitForTimeout(400); out.push('CHECKGROUP: ' + legend.slice(0, 60) + ' => ' + ot[k]); }
+    else out.push('CHECKGROUP NEEDS ANSWER: ' + legend.slice(0, 120) + ' [' + ot.join(' | ') + ']');
+  }
   out.push('AUTO: ' + await AUTO(page));
   return out.join('\n');
 }"""
@@ -378,6 +420,17 @@ def _repair_review(review):
             f["value"] = lines[i + 1]
             f["required"] = bool(f.get("required")) or v.endswith("*")
             fixed += 1
+    # The last question of a step is sometimes paired with the NEXT step's heading ("Voluntary Disclosures") as its
+    # value (S&P Global 2026-11-24). The real answer is the line that follows the question in the page text.
+    heads = {"voluntary disclosures", "self identify", "review", "my information", "my experience", "application questions"}
+    for f in review.get("fields") or []:
+        if sq(f.get("value")).lower() not in heads:
+            continue
+        lab = sq(f.get("label")).rstrip("*").strip()
+        i = next((k for k, ln in enumerate(lines) if ln.rstrip("*").strip() == lab), -1)
+        if 0 <= i < len(lines) - 1 and sq(lines[i + 1]).lower() not in heads:
+            f["value"] = lines[i + 1]
+            fixed += 1
     return fixed
 
 
@@ -388,6 +441,9 @@ def _final_check(ws, run):
     if _repair_review(review):
         (run.folder / "review.json").write_text(json.dumps(review, indent=1, ensure_ascii=False), encoding="utf8")
     for f in review.get("fields") or []:  # tracker-backed facts are verified here, not in the answer bank
+        ca = _company_answer(ws, f.get("label"))
+        if ca and str(f.get("value") or "").strip() == ca.strip():
+            review.setdefault("verified_overrides", {})[f["label"]] = {"value": f["value"], "source": "answer bank: company-specific answer"}
         pd = _prior_detail(ws, f.get("label"))
         if pd and str(f.get("value") or "").strip() == pd:
             review.setdefault("verified_overrides", {})[f["label"]] = {"value": f["value"], "source": "tracker: last application to this company"}

@@ -38,7 +38,10 @@ AI_AGENT_NOTE = ("AI-agent disclosure question: never answer from the answer ban
 # to compare your application ...") are not questions about whether an AI agent is applying.
 EMPLOYER_AI_CONSENT_RX = re.compile(
     r"\bi (consent|agree) to [\w&.' -]{1,40}? using (these |its |the )?(ai|artificial intelligence|automated)\b"
-    r"|\b[\w&.-]+ (may )?uses? (ai|artificial intelligence|automated tools)\b[^.?]{0,80}\b(screen|evaluat|review|identify|assess|compare|recommend)",
+    r"|\b[\w&.-]+ (may )?uses? (ai|artificial intelligence|automated tools)\b[^.?]{0,80}\b(screen|evaluat|review|identify|assess|compare|recommend)"
+    # "S&P Global requests your consent to use HiredScore, an AI-assisted screening tool, to help evaluate your
+    # application" (2026-11-24): the EMPLOYER asks to use its own tool on the application
+    r"|\b(requests?|asks? for|seeks?|needs?) your consent to use\b[^.?]{0,80}\b(ai|artificial intelligence|automated)\b[^.?]{0,60}\b(screen|evaluat|review|assess|compare)",
     re.I)
 EMPLOYER_AI_NOTICE_RX = re.compile(
     r"\b(we|our (team|company|hiring team|recruiters?)|this (company|employer)|[A-Z][\w&.-]* (uses|leverages))\b[^.?]{0,40}"
@@ -102,6 +105,9 @@ def equivalent(found, expected):
     if not nv or not ne:
         return False
     if nv == "checked" and ne in ("yes", "true", "checked", "i agree", "agree"):  # a ticked consent box (Greenhouse review)
+        return True
+    # consent dropdowns spell the refusal out: "I DO NOT consent to S&P Global using HiredScore ..." for an answer of "No"
+    if ne in ("no", "no, i do not consent") and re.match(r"(no\b[, ]*)?i (do not|don't) (consent|agree)\b", nv):
         return True
     affirm = ("yes", "true", "checked", "i agree", "agree", "i acknowledge", "acknowledge", "i consent", "i accept", "accept")
     if nv in affirm and ne in affirm:  # consent / acknowledgement boxes: any affirmative wording (GM 2026-11-24)
@@ -861,6 +867,8 @@ def final_review(ws, review):
         return bool(x) and norm(str(x.get("value", ""))) == norm(str(value))
     v["mismatches"] = [m for m in v["mismatches"] if not _ok_override(m.get("label"), m.get("found"))]
     v["unknown"] = [u for u in v["unknown"] if not _ok_override(u.get("label"), u.get("value"))]
+    # Workday shows "No Response" for an optional question that was left blank (KLA: Facebook / Twitter handle): nothing to verify
+    v["unknown"] = [u for u in v["unknown"] if norm(str(u.get("value") or "")) not in ("no response", "not answered", "n/a")]
     for m in v["mismatches"]:
         if (other_detail and norm(str(m.get("found", ""))) == "other"
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
