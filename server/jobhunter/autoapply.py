@@ -550,6 +550,11 @@ def workday(ws, run, submit):
         run.note(f"auth: {st}")
         if st == "signed_in":
             break
+        if st == "verification_sent" and os.environ.get("JH_FORCE_RESET") and not run.__dict__.get("reset_done"):
+            # tenants where sign-in only works right after a reset (Humana): skip the activation-mail wait
+            if _reset_password(ws, run, sd, url):
+                continue
+            return run.done("needs_claude", detail="forced password reset did not complete: " + str(run.__dict__.get("reset_note", ""))[:200], auth=st)
         if st == "verification_sent":
             from . import mail_verify
             r = mail_verify.find_verification(ws, 15, ".".join(run.host.split(".")[:2]), "", 180, log=lambda *a: None) or {}
