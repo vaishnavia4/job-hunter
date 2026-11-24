@@ -103,6 +103,9 @@ def equivalent(found, expected):
         return False
     if nv == "checked" and ne in ("yes", "true", "checked", "i agree", "agree"):  # a ticked consent box (Greenhouse review)
         return True
+    affirm = ("yes", "true", "checked", "i agree", "agree", "i acknowledge", "acknowledge", "i consent", "i accept", "accept")
+    if nv in affirm and ne in affirm:  # consent / acknowledgement boxes: any affirmative wording (GM 2026-11-24)
+        return True
     if re.match(r"\d{1,2}[.)]\s+\D", nv):  # numbered options: "1. Woman" (Cisco 2026-11-23)
         return equivalent(re.sub(r"^\d{1,2}[.)]\s+", "", nv), expected)
     if nv == ne or _canon(nv) == _canon(ne):

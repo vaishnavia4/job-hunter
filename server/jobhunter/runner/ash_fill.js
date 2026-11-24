@@ -28,7 +28,8 @@ async (page) => {
     try {
       lab = norm(await e.locator('label').first().innerText().catch(() => '')).replace(/\*$/, '').trim();
       if (!lab) continue;
-      const required = /\*\s*$/.test(norm(await e.locator('label').first().innerText().catch(() => ''))) || (await e.locator('input[required], textarea[required], select[required]').count()) > 0;
+      const required = /\*\s*$/.test(norm(await e.locator('label').first().innerText().catch(() => ''))) || (await e.locator('input[required], textarea[required], select[required]').count()) > 0
+        || /_required_/.test((await e.locator('label').first().getAttribute('class').catch(() => '')) || '');  // Ashby marks required questions with a label class (Sierra)
       await e.scrollIntoViewIfNeeded().catch(() => {});
       const file = e.locator('input[type=file]');
       if (await file.count()) {

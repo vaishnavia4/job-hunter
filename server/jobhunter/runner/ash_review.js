@@ -10,7 +10,7 @@ async (page) => {
       const raw = norm(l ? l.innerText : '');
       const label = raw.replace(/\*$/, '').trim();
       if (!label) continue;
-      const required = /\*$/.test(raw) || !!e.querySelector('input[required], textarea[required], select[required]');
+      const required = /\*$/.test(raw) || !!e.querySelector('input[required], textarea[required], select[required]') || (l && String(l.className).indexOf('_required_') >= 0);
       let v = '';
       const file = e.querySelector('input[type=file]');
       const boxes = [...e.querySelectorAll('input[type=radio], input[type=checkbox]')];
