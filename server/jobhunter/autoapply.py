@@ -355,6 +355,20 @@ def _repair_review(review):
     lines = [sq(ln) for ln in str(review.get("page_text") or "").splitlines()]
     lines = [ln for ln in lines if ln]
     fixed = 0
+    # A wrapper element is sometimes read as one extra field whose label is "<question>* <answer>" and whose value is
+    # the NEXT question with its answer (Nordstrom 2026-11-24). The real pair exists as its own field: drop the merged one.
+    flds = review.get("fields") or []
+    keep = []
+    for f in flds:
+        lab = sq(f.get("label"))
+        merged = any(g is not f and sq(g.get("label")) and lab.startswith(sq(g.get("label"))) and len(lab) > len(sq(g.get("label")))
+                     and sq(lab[len(sq(g.get("label"))):]).lstrip("* ").strip() == sq(g.get("value")) for g in flds)
+        if merged:
+            fixed += 1
+        else:
+            keep.append(f)
+    if fixed:
+        review["fields"] = keep
     for f in review.get("fields") or []:
         v = sq(f.get("value"))
         if len(v) < 100 or not (v.endswith("*") or v.endswith(".") or v.endswith("?")):
