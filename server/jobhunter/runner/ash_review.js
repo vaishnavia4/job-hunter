@@ -23,6 +23,14 @@ async (page) => {
         v = on ? norm(on.innerText) : (yn[label] || '');
       } else if (boxes.length) {
         const on = boxes.filter(b => b.checked);
+        // phone field with its own "consent to text messages" radios (Zip, Ramp): report the number and the consent separately
+        const tel = e.querySelector('input[type=tel], input[type=text]');
+        if (tel) {
+          fields.push({ label, value: norm(tel.value), required });
+          const c = on.map(b => { const fl = b.id && e.querySelector('label[for="' + b.id + '"]'); return norm(fl ? fl.innerText : (b.closest('label') || b.parentElement).innerText); }).join('; ');
+          if (c) fields.push({ label: 'Do you consent to receiving SMS text messages about your application?', value: /^yes/i.test(c) ? 'Yes' : /^no/i.test(c) ? 'No' : c, required: false });
+          continue;
+        }
         if (!on.length && !required) continue;
         v = on.map(b => { const fl = b.id && e.querySelector('label[for="' + b.id + '"]'); return norm(fl ? fl.innerText : (b.closest('label') || b.parentElement).innerText); }).join('; ');
         if (boxes.length === 1 && on.length) v = 'checked';

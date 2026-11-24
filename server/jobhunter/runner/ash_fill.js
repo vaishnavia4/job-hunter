@@ -52,6 +52,13 @@ async (page) => {
       // radio / checkbox group
       const boxes = e.locator('input[type=radio], input[type=checkbox]');
       if (await boxes.count()) {
+        // a phone field that carries its own "consent to text messages" radios (Zip, Ramp): fill the number here,
+        // and ask the consent question under its own wording below
+        const tel = e.locator('input[type=tel], input[type=text]').first();
+        if ((await tel.count()) && !norm(await tel.inputValue().catch(() => ''))) {
+          const pa = await ask(lab, null);
+          if (pa.status === 'ok' && pa.answer) { await tel.fill(String(pa.answer)); out.filled.push(lab.slice(0, 80) + ' => ' + String(pa.answer)); }
+        }
         if (await e.locator('input:checked').count()) continue;
         const n = await boxes.count(), opts = [];
         for (let i = 0; i < n; i++) {
@@ -68,8 +75,11 @@ async (page) => {
           else out.skipped.push(lab.slice(0, 80) + ' (optional box left unticked)');
           continue;
         }
-        const a = await ask(lab, opts);
-        const k = a.status === 'ok' && a.option ? opts.findIndex(t => t === norm(a.option)) : -1;
+        const smsConsent = opts.length && opts.every(t => /consent/i.test(t) && /text|sms/i.test(t));
+        const qText = smsConsent ? 'Do you consent to receiving SMS text messages about your application?' : lab;
+        const a = await ask(qText, opts);
+        let k = a.status === 'ok' && a.option ? opts.findIndex(t => t === norm(a.option)) : -1;
+        if (k < 0 && smsConsent && /^(yes|no)$/i.test(String(a.answer || ''))) k = opts.findIndex(t => new RegExp('^' + a.answer, 'i').test(t));
         if (k >= 0) { await boxes.nth(k).check({ force: true }).catch(async () => { await boxes.nth(k).click({ force: true }); }); await sleep(250); out.filled.push(lab.slice(0, 80) + ' => ' + opts[k]); }
         else if (required) out.needs_user.push({ q: lab, options: opts.slice(0, 12), status: a.status, answer: a.answer });
         else out.skipped.push(lab.slice(0, 80) + ' (optional, no saved answer)');
@@ -91,7 +101,7 @@ async (page) => {
       if (nameAttr === '_systemfield_name') { await inp.fill(NAME); out.filled.push('name'); continue; }
       if (nameAttr === '_systemfield_email') { await inp.fill(EMAIL); out.filled.push('email'); continue; }
       const ph = (await inp.getAttribute('placeholder')) || '';
-      if (/^location/i.test(lab) && /start typing/i.test(ph)) {  // autocomplete: type the city, take the Colorado match
+      if (/location|where are you (based|located)/i.test(lab) && /start typing/i.test(ph)) {  // 'Location', 'Your Location' (ClickHouse)  // autocomplete: type the city, take the Colorado match
         await inp.click(); await inp.pressSequentially('Englewood, Colo', { delay: 60 }); await sleep(2500);
         const o = page.locator('[role=option]:visible').filter({ hasText: /Englewood.*(Colorado|CO)\b/i }).first();
         if (await o.count()) { const t = norm(await o.innerText()); await o.click(); out.filled.push('location => ' + t); }

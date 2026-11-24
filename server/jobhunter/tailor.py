@@ -109,7 +109,44 @@ def _bullet_counts(master):
     return out
 
 
-def tailor(ws, target, model="sonnet", level=None, force=False, jd_text=None):
+PRESCREEN = """You decide whether one job posting is worth tailoring a resume for. You see a short candidate summary, not the
+full resume. Reply with one JSON object only: {"decision": "apply"|"skip", "reason": "one sentence"}.
+Answer "skip" ONLY when a SKIP_RULE clearly applies or the job is clearly a different function from the candidate's
+(for example sales, people management, policy, hardware, pure software development in a language the candidate does not
+list as a main skill). When in doubt, answer "apply": a second, careful screening follows."""
+
+
+def _summary(master):
+    """A few hundred tokens that describe the candidate well enough for a first screen."""
+    exp = master.get("experience") or []
+    skills = master.get("skills") or {}
+    flat = json.dumps(skills, ensure_ascii=False)
+    return "\n".join([
+        "Headline: " + str(master.get("headline") or ""),
+        "Summary: " + str(master.get("summary") or "")[:700],
+        "Roles: " + "; ".join(f"{e.get('title')} at {e.get('company')}" for e in exp),
+        "Skills: " + flat[:1500],
+        "Certifications: " + ", ".join(map(str, master.get("certifications") or [])),
+    ])
+
+
+def prescreen(ws, row, jd, master, model="haiku"):
+    """Cheap first screen (default Haiku). -> (decision, reason, usage). Errors count as 'apply' (the full screen decides)."""
+    prompt = "\n\n".join([
+        "SKIP_RULES:\n- " + "\n- ".join(_skip_rules(ws)),
+        "CANDIDATE:\n" + _summary(master),
+        f"JOB: {row['company']} - {row['title']} | location: {row.get('location', '')} | salary: {row.get('salary', '') or 'not listed'}",
+        "POSTING:\n" + jd[:12000],
+    ])
+    try:
+        text, u = _claude(prompt, PRESCREEN, model, timeout=180)
+        d = _parse(text)
+        return ("skip" if d.get("decision") == "skip" else "apply"), str(d.get("reason") or ""), u
+    except Exception as e:
+        return "apply", f"prescreen failed ({type(e).__name__})", {"cost_usd": 0, "in": 0, "out": 0}
+
+
+def tailor(ws, target, model="sonnet", level=None, force=False, jd_text=None, prescreen_model="haiku"):
     ws = ws if isinstance(ws, Workspace) else Workspace(ws)
     rows = ws.load_tracker()
     key = str(target).replace("\\", "/").rstrip("/").split("/")[-1]
@@ -136,6 +173,15 @@ def tailor(ws, target, model="sonnet", level=None, force=False, jd_text=None):
     master = {k: v for k, v in (ws.master() or {}).items() if not k.startswith("_")}
     skills_cfg = ws.cfg("skills", {}) or {}
     secondary = [k for k, v in (skills_cfg.get("vocab") or {}).items() if isinstance(v, dict) and v.get("have") == "secondary"]
+    pre_cost = 0.0
+    if prescreen_model and prescreen_model != model:
+        d0, why0, u0 = prescreen(ws, row, jd, master, prescreen_model)
+        pre_cost = u0.get("cost_usd") or 0
+        if d0 == "skip":
+            save_json(folder / "decision.json", {"decision": "skip", "reason": why0, "screened_by": prescreen_model})
+            ws.set_fields(row["job_id"], status="skipped", notes=("screen: " + why0)[:300])
+            return {"status": "skipped", "job_id": row["job_id"], "company": row["company"], "reason": why0[:300],
+                    "model": prescreen_model, "cost_usd": round(pre_cost, 4)}
     prompt = "\n\n".join([
         "TAILORING_LEVEL: " + LEVEL_RULES[lvl],
         "SKIP_RULES:\n- " + "\n- ".join(_skip_rules(ws)),
@@ -145,7 +191,7 @@ def tailor(ws, target, model="sonnet", level=None, force=False, jd_text=None):
         "POSTING:\n" + jd[:24000],
         "MASTER_RESUME:\n" + json.dumps(master, ensure_ascii=False),
     ])
-    calls, cost = [], 0.0
+    calls, cost = [], pre_cost
     try:
         text, u = _claude(prompt, SYSTEM, model)
         calls.append(u); cost += u["cost_usd"]
