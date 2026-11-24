@@ -869,6 +869,8 @@ def final_review(ws, review):
     v["unknown"] = [u for u in v["unknown"] if not _ok_override(u.get("label"), u.get("value"))]
     # Workday shows "No Response" for an optional question that was left blank (KLA: Facebook / Twitter handle): nothing to verify
     v["unknown"] = [u for u in v["unknown"] if norm(str(u.get("value") or "")) not in ("no response", "not answered", "n/a")]
+    # an optional question left blank shows as "No Response" (HP: start date, notice period): not a wrong answer
+    v["mismatches"] = [m for m in v["mismatches"] if norm(str(m.get("found") or "")) not in ("no response", "not answered")]
     for m in v["mismatches"]:
         if (other_detail and norm(str(m.get("found", ""))) == "other"
                 and _canon(norm(str(m.get("expected", "")))) == "company careers website"):
